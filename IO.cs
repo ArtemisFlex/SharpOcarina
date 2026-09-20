@@ -51,10 +51,20 @@ namespace SharpOcarina
             catch (Exception e)
             {
                 DebugConsole.WriteLine("Old XML detected, using old format to import it");
-                XmlSerializer XS = new XmlSerializer(typeof(T));
-                StreamReader SR = new StreamReader(Filename);
-
-                return (T)XS.Deserialize(SR);
+                // Preserve the document namespace when falling back to the legacy serializer.
+                // New scene XML uses the SharpOcarina namespace; older files may have none.
+                XmlDocument document = new XmlDocument();
+                document.Load(Filename);
+                XmlElement rootElement = document.DocumentElement;
+                XmlRootAttribute root = new XmlRootAttribute(rootElement?.LocalName ?? typeof(T).Name)
+                {
+                    Namespace = rootElement?.NamespaceURI ?? string.Empty
+                };
+                XmlSerializer XS = new XmlSerializer(typeof(T), root);
+                using (StreamReader SR = new StreamReader(Filename))
+                {
+                    return (T)XS.Deserialize(SR);
+                }
             }
 
 
