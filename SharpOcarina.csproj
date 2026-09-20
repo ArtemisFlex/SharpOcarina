@@ -120,6 +120,8 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="LayoutManifestIntegration.cs" />
+    <Compile Include="RoomGeometryBuilder.cs" />
+    <Compile Include="RoomGeometryEditor.cs" />
     <Compile Include="AutoCompleteTextBox.cs">
       <SubType>Component</SubType>
     </Compile>

@@ -302,6 +302,12 @@ namespace SharpOcarina
             InitializeComponent();
             InitializeLayoutManifestIntegration();
 
+            ToolStripMenuItem roomGeometryMenu = new ToolStripMenuItem("Room Geometry Authoring");
+            roomGeometryMenu.ToolTipText = "Place primitive visual and collision geometry in the selected room";
+            roomGeometryMenu.Click += delegate { using (RoomGeometryEditor editor = new RoomGeometryEditor(this)) editor.ShowDialog(this); };
+            extraToolStripMenuItem.DropDownItems.Add(new ToolStripSeparator());
+            extraToolStripMenuItem.DropDownItems.Add(roomGeometryMenu);
+
 
             this.args = args;
 
@@ -394,6 +400,30 @@ namespace SharpOcarina
             
 
 
+        }
+
+        public void AppendRoomPrimitive(RoomPrimitiveSpec spec)
+        {
+            if (CurrentScene == null || RoomList.SelectedIndex < 0 || RoomList.SelectedIndex >= CurrentScene.Rooms.Count)
+                throw new InvalidOperationException("Open a scene and select a room before adding geometry.");
+
+            ZScene.ZRoom room = CurrentScene.Rooms[RoomList.SelectedIndex];
+            if (room.ObjModel == null)
+                room.ObjModel = new ObjFile();
+            if (CurrentScene.ColModel == null)
+                CurrentScene.ColModel = new ObjFile();
+
+            RoomGeometryBuilder.Append(room.ObjModel, CurrentScene.ColModel, spec);
+            room.TrueGroups = room.ObjModel.Groups;
+            room.ObjModel.BasePath = CurrentScene.BasePath;
+            CurrentScene.ColModel.BasePath = CurrentScene.BasePath;
+
+            // Rebuild display lists after mutating the model. Texture loading is only
+            // needed when this primitive introduced a new texture path.
+            room.ObjModel.Prepare(!string.IsNullOrEmpty(spec.TexturePath), room.TrueGroups);
+            GroupList.DataSource = null;
+            GroupList.DataSource = room.TrueGroups;
+            Invalidate(true);
         }
 
         #endregion
