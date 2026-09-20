@@ -1116,6 +1116,7 @@ namespace SharpOcarina
             }
 
             GL.Scale(10.0f, 10.0f, 10.0f);
+            GL.Scale(Actor.EditorScale.X, Actor.EditorScale.Y, Actor.EditorScale.Z);
 
             GL.Color4(FillColor);
 
@@ -13187,6 +13188,18 @@ namespace SharpOcarina
 
         private void glControl1_MouseWheel(object sender, MouseEventArgs e)
         {
+            if (layoutToolMode && (ModifierKeys & Keys.Control) != 0 && actorpick == _Actor_ && CurrentScene != null && CurrentScene.Rooms.Count > 0 && actorEditControl.ActorNumber >= 0)
+            {
+                ZActor actor = CurrentScene.Rooms[RoomList.SelectedIndex].ZActors[actorEditControl.ActorNumber];
+                float factor = e.Delta > 0 ? 1.05f : 0.95f;
+                actor.EditorScale = new Vector3(
+                    Clamp(actor.EditorScale.X * factor, 0.05f, 20.0f),
+                    Clamp(actor.EditorScale.Y * factor, 0.05f, 20.0f),
+                    Clamp(actor.EditorScale.Z * factor, 0.05f, 20.0f));
+                glControl1.Invalidate();
+                return;
+            }
+
             Object target = null;
             if (actorpick == 1 && actorEditControl.ActorNumber != -1)
                 target = CurrentScene.Rooms[RoomList.SelectedIndex].ZActors[actorEditControl.ActorNumber];

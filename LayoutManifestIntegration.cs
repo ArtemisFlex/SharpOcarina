@@ -8,8 +8,16 @@ namespace SharpOcarina
 {
     public partial class MainForm
     {
+        private bool layoutToolMode;
+
         private void InitializeLayoutManifestIntegration()
         {
+            ToolStripMenuItem layoutMode = new ToolStripMenuItem("Native Layout Editing Mode");
+            layoutMode.CheckOnClick = true;
+            layoutMode.ToolTipText = "Use SharpOcarina's OpenTK viewport for actor placement and editor-only scaling";
+            layoutMode.CheckedChanged += delegate { layoutToolMode = layoutMode.Checked; };
+            fileToolStripMenuItem.DropDownItems.Insert(2, layoutMode);
+
             ToolStripMenuItem importLayout = new ToolStripMenuItem("Import OoT Layout JSON...");
             importLayout.ToolTipText = "Import actor placement exported by the OoT layout viewer";
             importLayout.Click += ImportLayoutManifest_Click;
@@ -80,6 +88,8 @@ namespace SharpOcarina
                 ushort parameters = (ushort)ReadInt(actor, "params", 0);
                 ZActor importedActor = new ZActor(actorId, position[0], position[1], position[2],
                     ToN64Rotation(rotation[0]), ToN64Rotation(rotation[1]), ToN64Rotation(rotation[2]), parameters);
+                float[] scale = ReadVector(actor, "scale", 3);
+                importedActor.EditorScale = new OpenTK.Vector3(scale[0], scale[1], scale[2]);
 
                 scene.Rooms[roomIndex].ZActors.Add(importedActor);
                 imported++;

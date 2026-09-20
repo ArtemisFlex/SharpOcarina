@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Xml.Serialization;
+using OpenTK;
 
 namespace SharpOcarina
 {
@@ -20,6 +21,10 @@ namespace SharpOcarina
         private byte _FrontSwitchTo, _FrontCamera, _BackSwitchTo, _BackCamera, _SpawnRoom = 0xFF;
         [XmlIgnore]
         private bool[] _IgnoreMMRot = { false, false, false };
+
+        // Editor-only transform. OoT actor records do not serialize arbitrary scale.
+        [XmlIgnore]
+        public Vector3 EditorScale = Vector3.One;
 
 
         [XmlIgnore]
