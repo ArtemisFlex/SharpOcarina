@@ -310,6 +310,9 @@ namespace SharpOcarina
         private NumericUpDown authoringPositionX;
         private NumericUpDown authoringPositionY;
         private NumericUpDown authoringPositionZ;
+        private NumericUpDown authoringRotationX;
+        private NumericUpDown authoringRotationY;
+        private NumericUpDown authoringRotationZ;
         private bool updatingAuthoringPosition;
         private AuthoringSelection authoringSelection;
         private bool authoringTreeDirty = true;
@@ -738,7 +741,7 @@ namespace SharpOcarina
             authoringFrameButton.Click += delegate { FrameAuthoringSelection(); };
             authoringApplyPositionButton = new Button
             {
-                Text = "Apply OoT position",
+                Text = "Apply OoT transform",
                 Dock = DockStyle.Top,
                 Height = 28,
                 Enabled = false,
@@ -762,6 +765,22 @@ namespace SharpOcarina
             positionRow.Controls.Add(authoringPositionY);
             positionRow.Controls.Add(new Label { Text = "Z", AutoSize = true, Padding = new Padding(6, 5, 2, 0) });
             positionRow.Controls.Add(authoringPositionZ);
+            FlowLayoutPanel rotationRow = new FlowLayoutPanel
+            {
+                Dock = DockStyle.Top,
+                Height = 32,
+                WrapContents = false,
+                Padding = new Padding(0, 3, 0, 0)
+            };
+            authoringRotationX = CreateAuthoringPositionBox();
+            authoringRotationY = CreateAuthoringPositionBox();
+            authoringRotationZ = CreateAuthoringPositionBox();
+            rotationRow.Controls.Add(new Label { Text = "RX", AutoSize = true, Padding = new Padding(0, 5, 2, 0) });
+            rotationRow.Controls.Add(authoringRotationX);
+            rotationRow.Controls.Add(new Label { Text = "RY", AutoSize = true, Padding = new Padding(3, 5, 2, 0) });
+            rotationRow.Controls.Add(authoringRotationY);
+            rotationRow.Controls.Add(new Label { Text = "RZ", AutoSize = true, Padding = new Padding(3, 5, 2, 0) });
+            rotationRow.Controls.Add(authoringRotationZ);
             authoringDetailsGrid = new PropertyGrid { Dock = DockStyle.Fill, ToolbarVisible = false, HelpVisible = true, PropertySort = PropertySort.Categorized };
             authoringDetailsGrid.PropertyValueChanged += delegate { authoringTreeDirty = true; UpdateForm(); };
             panel.Controls.Add(authoringDetailsGrid);
@@ -772,6 +791,7 @@ namespace SharpOcarina
             panel.Controls.Add(authoringOpenLegacyButton);
             panel.Controls.Add(authoringFrameButton);
             panel.Controls.Add(authoringApplyPositionButton);
+            panel.Controls.Add(rotationRow);
             panel.Controls.Add(positionRow);
             panel.Controls.Add(authoringSelectionLabel);
             return panel;
@@ -952,6 +972,16 @@ namespace SharpOcarina
                 authoringSelection.ItemIndex >= 0 && authoringSelection.ItemIndex < CurrentScene.Transitions.Count;
         }
 
+        private bool CanEditAuthoringRotation()
+        {
+            if (CurrentScene == null || authoringSelection == null) return false;
+            if (authoringSelection.Kind == "Actor")
+                return authoringSelection.RoomIndex >= 0 && authoringSelection.RoomIndex < CurrentScene.Rooms.Count &&
+                    authoringSelection.ItemIndex >= 0 && authoringSelection.ItemIndex < CurrentScene.Rooms[authoringSelection.RoomIndex].ZActors.Count;
+            return authoringSelection.Kind == "Transition" &&
+                authoringSelection.ItemIndex >= 0 && authoringSelection.ItemIndex < CurrentScene.Transitions.Count;
+        }
+
         private void UpdateAuthoringPositionControls()
         {
             if (authoringApplyPositionButton == null) return;
@@ -960,6 +990,10 @@ namespace SharpOcarina
             authoringPositionX.Enabled = canEdit;
             authoringPositionY.Enabled = canEdit;
             authoringPositionZ.Enabled = canEdit;
+            bool canRotate = CanEditAuthoringRotation();
+            authoringRotationX.Enabled = canRotate;
+            authoringRotationY.Enabled = canRotate;
+            authoringRotationZ.Enabled = canRotate;
             if (!canEdit) return;
 
             Vector3d position;
@@ -970,6 +1004,15 @@ namespace SharpOcarina
                 authoringPositionX.Value = (decimal)Clamp(position.X, -32767.0, 32767.0);
                 authoringPositionY.Value = (decimal)Clamp(position.Y, -32767.0, 32767.0);
                 authoringPositionZ.Value = (decimal)Clamp(position.Z, -32767.0, 32767.0);
+                if (canRotate)
+                {
+                    ZActor actor = authoringSelection.Kind == "Actor"
+                        ? CurrentScene.Rooms[authoringSelection.RoomIndex].ZActors[authoringSelection.ItemIndex]
+                        : CurrentScene.Transitions[authoringSelection.ItemIndex];
+                    authoringRotationX.Value = (decimal)actor.XRot;
+                    authoringRotationY.Value = (decimal)actor.YRot;
+                    authoringRotationZ.Value = (decimal)actor.ZRot;
+                }
             }
             finally
             {
@@ -991,6 +1034,9 @@ namespace SharpOcarina
                 actor.XPos = (short)x;
                 actor.YPos = (short)y;
                 actor.ZPos = (short)z;
+                actor.XRot = (short)authoringRotationX.Value;
+                actor.YRot = (short)authoringRotationY.Value;
+                actor.ZRot = (short)authoringRotationZ.Value;
             }
             else if (authoringSelection.Kind == "Transition")
             {
@@ -999,6 +1045,9 @@ namespace SharpOcarina
                 transition.XPos = (short)x;
                 transition.YPos = (short)y;
                 transition.ZPos = (short)z;
+                transition.XRot = (short)authoringRotationX.Value;
+                transition.YRot = (short)authoringRotationY.Value;
+                transition.ZRot = (short)authoringRotationZ.Value;
             }
             else
             {
