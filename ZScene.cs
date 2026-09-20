@@ -84,6 +84,7 @@ namespace SharpOcarina
                 public int Type;
                 public string Name = "Primitive";
                 public string MaterialName = "Default";
+                public List<string> FaceMaterials = new List<string>();
                 public string TexturePath = "";
                 public double MinX = -50, MinY = 0, MinZ = -50;
                 public double MaxX = 50, MaxY = 100, MaxZ = 50;
@@ -97,6 +98,7 @@ namespace SharpOcarina
                     Type = (int)spec.Type;
                     Name = spec.Name;
                     MaterialName = spec.MaterialName;
+                    FaceMaterials = spec.FaceMaterials == null ? new List<string>() : new List<string>(spec.FaceMaterials);
                     TexturePath = spec.TexturePath ?? "";
                     MinX = spec.Min.X; MinY = spec.Min.Y; MinZ = spec.Min.Z;
                     MaxX = spec.Max.X; MaxY = spec.Max.Y; MaxZ = spec.Max.Z;
@@ -111,6 +113,7 @@ namespace SharpOcarina
                         Type = (RoomPrimitiveType)Type,
                         Name = Name,
                         MaterialName = MaterialName,
+                        FaceMaterials = FaceMaterials == null ? new List<string>() : new List<string>(FaceMaterials),
                         TexturePath = string.IsNullOrEmpty(TexturePath) ? null : TexturePath,
                         Min = new Vector3d(MinX, MinY, MinZ),
                         Max = new Vector3d(MaxX, MaxY, MaxZ),

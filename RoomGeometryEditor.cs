@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Drawing;
 using System.Globalization;
 using System.Windows.Forms;
@@ -12,6 +13,7 @@ namespace SharpOcarina
         private readonly ComboBox type = new ComboBox();
         private readonly TextBox name = new TextBox();
         private readonly TextBox material = new TextBox();
+        private readonly TextBox faceMaterials = new TextBox();
         private readonly TextBox texture = new TextBox();
         private readonly TextBox minX = new TextBox();
         private readonly TextBox minY = new TextBox();
@@ -38,6 +40,7 @@ namespace SharpOcarina
 
             name.Text = "Primitive";
             material.Text = "Default";
+            faceMaterials.Text = "Optional: floor;wall;roof (one per face)";
             minX.Text = "-50"; minY.Text = "0"; minZ.Text = "-50";
             maxX.Text = "50"; maxY.Text = "100"; maxZ.Text = "50";
             polytype.Text = "0";
@@ -59,11 +62,12 @@ namespace SharpOcarina
             AddRow(table, 0, "Primitive", type);
             AddRow(table, 1, "Name", name);
             AddRow(table, 2, "Material", material);
-            AddRow(table, 3, "Texture", texture);
-            AddRow(table, 4, "Min X / Y / Z", ThreeInputs(minX, minY, minZ));
-            AddRow(table, 5, "Max X / Y / Z", ThreeInputs(maxX, maxY, maxZ));
-            AddRow(table, 6, "Collision polytype", polytype);
-            table.Controls.Add(collision, 0, 7);
+            AddRow(table, 3, "Face materials", faceMaterials);
+            AddRow(table, 4, "Texture", texture);
+            AddRow(table, 5, "Min X / Y / Z", ThreeInputs(minX, minY, minZ));
+            AddRow(table, 6, "Max X / Y / Z", ThreeInputs(maxX, maxY, maxZ));
+            AddRow(table, 7, "Collision polytype", polytype);
+            table.Controls.Add(collision, 0, 8);
             table.SetColumnSpan(collision, 2);
 
             Label hint = new Label
@@ -72,7 +76,7 @@ namespace SharpOcarina
                 AutoSize = true,
                 ForeColor = Color.DimGray
             };
-            table.Controls.Add(hint, 0, 8);
+            table.Controls.Add(hint, 0, 9);
             table.SetColumnSpan(hint, 2);
 
             FlowLayoutPanel buttons = new FlowLayoutPanel { Dock = DockStyle.Fill, FlowDirection = FlowDirection.RightToLeft };
@@ -81,7 +85,7 @@ namespace SharpOcarina
             add.Click += Add_Click;
             buttons.Controls.Add(add);
             buttons.Controls.Add(cancel);
-            table.Controls.Add(buttons, 0, 10);
+            table.Controls.Add(buttons, 0, 11);
             table.SetColumnSpan(buttons, 2);
             Controls.Add(table);
             AcceptButton = add;
@@ -113,6 +117,7 @@ namespace SharpOcarina
                     Type = (RoomPrimitiveType)type.SelectedIndex,
                     Name = name.Text,
                     MaterialName = material.Text,
+                    FaceMaterials = ParseFaceMaterials(),
                     TexturePath = string.IsNullOrWhiteSpace(texture.Text) || texture.Text.StartsWith("Optional ") ? null : texture.Text,
                     Min = new Vector3d(Read(minX), Read(minY), Read(minZ)),
                     Max = new Vector3d(Read(maxX), Read(maxY), Read(maxZ)),
@@ -126,6 +131,13 @@ namespace SharpOcarina
             {
                 MessageBox.Show(this, ex.Message, "Room Geometry", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
+        }
+
+        private List<string> ParseFaceMaterials()
+        {
+            if (string.IsNullOrWhiteSpace(faceMaterials.Text) || faceMaterials.Text.StartsWith("Optional:"))
+                return new List<string>();
+            return new List<string>(faceMaterials.Text.Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries));
         }
 
         private static double Read(TextBox box)

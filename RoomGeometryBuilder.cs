@@ -21,6 +21,7 @@ namespace SharpOcarina
         public RoomPrimitiveType Type = RoomPrimitiveType.Cube;
         public string Name = "Primitive";
         public string MaterialName = "Default";
+        public List<string> FaceMaterials = new List<string>();
         public string TexturePath = null;
         public Vector3d Min = new Vector3d(-50, 0, -50);
         public Vector3d Max = new Vector3d(50, 100, 50);
@@ -56,6 +57,8 @@ namespace SharpOcarina
             EnsureMaterial(visual, materialName, spec.TexturePath);
 
             List<Face> faces = BuildFaces(spec, materialName);
+            foreach (Face face in faces)
+                EnsureMaterial(visual, face.MaterialName, spec.TexturePath);
             AppendFaces(visual, groupName, faces, false, spec.CollisionPolyType);
 
             if (collision != null && spec.AddToCollision)
@@ -82,10 +85,10 @@ namespace SharpOcarina
                             new Vector3d(spec.Max.X, spec.Min.Y, spec.Min.Z),
                             new Vector3d(spec.Max.X, spec.Min.Y, spec.Max.Z),
                             new Vector3d(spec.Min.X, spec.Min.Y, spec.Max.Z)
-                        }, materialName)
+                        }, FaceMaterial(spec, 0, materialName))
                     };
                 case RoomPrimitiveType.Triangle:
-                    return new List<Face> { MakeFace(new Vector3d[] { spec.A, spec.B, spec.C }, materialName) };
+                    return new List<Face> { MakeFace(new Vector3d[] { spec.A, spec.B, spec.C }, FaceMaterial(spec, 0, materialName)) };
                 case RoomPrimitiveType.Ramp:
                     return BuildRamp(spec, materialName);
                 default:
@@ -106,12 +109,12 @@ namespace SharpOcarina
 
             return new List<Face>
             {
-                MakeFace(new Vector3d[] { a, d, c, b }, materialName),
-                MakeFace(new Vector3d[] { e, f, g, h }, materialName),
-                MakeFace(new Vector3d[] { a, b, f, e }, materialName),
-                MakeFace(new Vector3d[] { b, c, g, f }, materialName),
-                MakeFace(new Vector3d[] { c, d, h, g }, materialName),
-                MakeFace(new Vector3d[] { d, a, e, h }, materialName)
+                MakeFace(new Vector3d[] { a, d, c, b }, FaceMaterial(spec, 0, materialName)),
+                MakeFace(new Vector3d[] { e, f, g, h }, FaceMaterial(spec, 1, materialName)),
+                MakeFace(new Vector3d[] { a, b, f, e }, FaceMaterial(spec, 2, materialName)),
+                MakeFace(new Vector3d[] { b, c, g, f }, FaceMaterial(spec, 3, materialName)),
+                MakeFace(new Vector3d[] { c, d, h, g }, FaceMaterial(spec, 4, materialName)),
+                MakeFace(new Vector3d[] { d, a, e, h }, FaceMaterial(spec, 5, materialName))
             };
         }
 
@@ -127,12 +130,19 @@ namespace SharpOcarina
 
             return new List<Face>
             {
-                MakeFace(new Vector3d[] { a, d, c, b }, materialName),
-                MakeFace(new Vector3d[] { a, b, f, e }, materialName),
-                MakeFace(new Vector3d[] { b, c, f }, materialName),
-                MakeFace(new Vector3d[] { c, d, e, f }, materialName),
-                MakeFace(new Vector3d[] { d, a, e }, materialName)
+                MakeFace(new Vector3d[] { a, d, c, b }, FaceMaterial(spec, 0, materialName)),
+                MakeFace(new Vector3d[] { a, b, f, e }, FaceMaterial(spec, 1, materialName)),
+                MakeFace(new Vector3d[] { b, c, f }, FaceMaterial(spec, 2, materialName)),
+                MakeFace(new Vector3d[] { c, d, e, f }, FaceMaterial(spec, 3, materialName)),
+                MakeFace(new Vector3d[] { d, a, e }, FaceMaterial(spec, 4, materialName))
             };
+        }
+
+        private static string FaceMaterial(RoomPrimitiveSpec spec, int index, string fallback)
+        {
+            if (spec.FaceMaterials != null && index < spec.FaceMaterials.Count && !string.IsNullOrWhiteSpace(spec.FaceMaterials[index]))
+                return spec.FaceMaterials[index].Trim();
+            return fallback;
         }
 
         private static Face MakeFace(Vector3d[] points, string materialName)
