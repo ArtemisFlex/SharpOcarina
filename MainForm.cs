@@ -310,6 +310,8 @@ namespace SharpOcarina
         private int authoringTreeRoom = -1;
         private SplitContainer authoringShellSplit;
         private SplitContainer authoringCenterDetailsSplit;
+        private ComboBox authoringRoomSelector;
+        private bool updatingAuthoringRoomSelector;
         private bool updatingForm;
 
         private sealed class AuthoringSelection
@@ -550,9 +552,20 @@ namespace SharpOcarina
                 authoringTreeDirty = true;
                 UpdateAuthoringWorkspace();
             });
+            Label roomLabel = new Label { Text = "Room", AutoSize = true, Padding = new Padding(4, 4, 0, 0) };
+            authoringRoomSelector = new ComboBox
+            {
+                Width = 190,
+                Height = 24,
+                DropDownStyle = ComboBoxStyle.DropDownList,
+                IntegralHeight = true
+            };
+            authoringRoomSelector.SelectedIndexChanged += AuthoringRoomSelector_SelectedIndexChanged;
             viewportToolbar.Controls.Add(contentToggle);
             viewportToolbar.Controls.Add(detailsToggle);
             viewportToolbar.Controls.Add(refreshAuthoring);
+            viewportToolbar.Controls.Add(roomLabel);
+            viewportToolbar.Controls.Add(authoringRoomSelector);
             viewportHost.Controls.Add(glControl1);
             viewportHost.Controls.Add(viewportToolbar);
             authoringCenterDetailsSplit.Panel1.Controls.Add(viewportHost);
@@ -570,6 +583,49 @@ namespace SharpOcarina
             Button button = new Button { Text = text, AutoSize = true, Height = 24, FlatStyle = FlatStyle.System };
             button.Click += handler;
             return button;
+        }
+
+        private void AuthoringRoomSelector_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (updatingAuthoringRoomSelector || CurrentScene == null || RoomList == null ||
+                authoringRoomSelector.SelectedIndex < 0 || authoringRoomSelector.SelectedIndex >= CurrentScene.Rooms.Count)
+                return;
+
+            if (RoomList.SelectedIndex != authoringRoomSelector.SelectedIndex)
+                RoomList.SelectedIndex = authoringRoomSelector.SelectedIndex;
+
+            authoringTreeDirty = true;
+            UpdateAuthoringWorkspace();
+            glControl1.Invalidate();
+        }
+
+        private void SyncAuthoringRoomSelector()
+        {
+            if (authoringRoomSelector == null) return;
+
+            updatingAuthoringRoomSelector = true;
+            try
+            {
+                authoringRoomSelector.BeginUpdate();
+                authoringRoomSelector.Items.Clear();
+                if (CurrentScene != null && CurrentScene.Rooms != null)
+                {
+                    for (int i = 0; i < CurrentScene.Rooms.Count; i++)
+                    {
+                        ZScene.ZRoom room = CurrentScene.Rooms[i];
+                        string model = string.IsNullOrEmpty(room.ModelShortFilename) ? "" : "  " + room.ModelShortFilename;
+                        authoringRoomSelector.Items.Add("Room " + i + model);
+                    }
+
+                    if (RoomList != null && RoomList.SelectedIndex >= 0 && RoomList.SelectedIndex < authoringRoomSelector.Items.Count)
+                        authoringRoomSelector.SelectedIndex = RoomList.SelectedIndex;
+                }
+            }
+            finally
+            {
+                authoringRoomSelector.EndUpdate();
+                updatingAuthoringRoomSelector = false;
+            }
         }
 
         private Control CreateAuthoringDrawer()
@@ -722,6 +778,7 @@ namespace SharpOcarina
         private void UpdateAuthoringWorkspace()
         {
             if (authoringContentTree == null) return;
+            SyncAuthoringRoomSelector();
             if (CurrentScene == null)
             {
                 authoringContentTree.Nodes.Clear();
