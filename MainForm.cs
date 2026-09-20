@@ -304,6 +304,7 @@ namespace SharpOcarina
         private Button authoringAddPathButton;
         private Button authoringAddPathPointButton;
         private Button authoringDeletePathPointButton;
+        private Button authoringOpenLegacyButton;
         private AuthoringSelection authoringSelection;
         private bool authoringTreeDirty = true;
         private ZScene authoringTreeScene;
@@ -711,6 +712,15 @@ namespace SharpOcarina
                 UseVisualStyleBackColor = true
             };
             authoringDeletePathPointButton.Click += delegate { DeleteAuthoringPathPoint(); };
+            authoringOpenLegacyButton = new Button
+            {
+                Text = "Open in existing OoT editor",
+                Dock = DockStyle.Top,
+                Height = 28,
+                Visible = false,
+                UseVisualStyleBackColor = true
+            };
+            authoringOpenLegacyButton.Click += delegate { OpenAuthoringSelectionInLegacyEditor(); };
             authoringDetailsGrid = new PropertyGrid { Dock = DockStyle.Fill, ToolbarVisible = false, HelpVisible = true, PropertySort = PropertySort.Categorized };
             authoringDetailsGrid.PropertyValueChanged += delegate { authoringTreeDirty = true; UpdateForm(); };
             panel.Controls.Add(authoringDetailsGrid);
@@ -718,6 +728,7 @@ namespace SharpOcarina
             panel.Controls.Add(authoringAddPathPointButton);
             panel.Controls.Add(authoringAddPathButton);
             panel.Controls.Add(authoringAssignPathButton);
+            panel.Controls.Add(authoringOpenLegacyButton);
             panel.Controls.Add(authoringSelectionLabel);
             return panel;
         }
@@ -732,6 +743,53 @@ namespace SharpOcarina
         {
             if (CurrentScene == null || RoomList.SelectedIndex < 0) return;
             using (RoomAssetBrowser browser = new RoomAssetBrowser(this, CurrentScene.Rooms[RoomList.SelectedIndex])) browser.ShowDialog(this);
+        }
+
+        private void OpenAuthoringSelectionInLegacyEditor()
+        {
+            if (CurrentScene == null || authoringSelection == null) return;
+
+            if (authoringSelection.RoomIndex >= 0 && authoringSelection.RoomIndex < CurrentScene.Rooms.Count)
+                RoomList.SelectedIndex = authoringSelection.RoomIndex;
+
+            switch (authoringSelection.Kind)
+            {
+                case "Actor":
+                    actorpick = _Actor_;
+                    tabControl1.SelectedTab = tabActors;
+                    actorEditControl.SetActors(ref CurrentScene.Rooms[authoringSelection.RoomIndex].ZActors);
+                    actorEditControl.ActorNumber = authoringSelection.ItemIndex;
+                    actorEditControl.UpdateActorEdit();
+                    break;
+                case "Transition":
+                    actorpick = _Transition_;
+                    tabControl1.SelectedTab = tabTransitions;
+                    transitionEditControl.SetActors(ref CurrentScene.Transitions);
+                    transitionEditControl.ActorNumber = authoringSelection.ItemIndex;
+                    transitionEditControl.UpdateActorEdit();
+                    break;
+                case "Path":
+                case "PathPoint":
+                    actorpick = _Pathway_;
+                    tabControl1.SelectedTab = tabPathways;
+                    PathwayNumber.Value = authoringSelection.ItemIndex;
+                    UpdatePathwayEdit();
+                    if (authoringSelection.Kind == "PathPoint" && PathwayListBox.Items.Count > 0)
+                        PathwayListBox.SelectedIndex = Clamp(authoringSelection.PointIndex, 0, PathwayListBox.Items.Count - 1);
+                    break;
+                case "Object":
+                case "Group":
+                case "Room":
+                    tabControl1.SelectedTab = tabRooms;
+                    if (authoringSelection.Kind == "Object")
+                        SelectRoomObject(authoringSelection.ItemIndex);
+                    else if (authoringSelection.Kind == "Group")
+                    {
+                        int groupIndex = CurrentScene.Rooms[authoringSelection.RoomIndex].ObjModel.Groups.IndexOf((ObjFile.Group)authoringSelection.Value);
+                        if (groupIndex >= 0) GroupList.SelectedIndex = groupIndex;
+                    }
+                    break;
+            }
         }
 
         private void SelectExistingAuthoringTab(string tabName)
@@ -888,6 +946,11 @@ namespace SharpOcarina
             authoringAddPathButton.Visible = CurrentScene != null;
             authoringAddPathPointButton.Visible = pathSelected;
             authoringDeletePathPointButton.Visible = pointSelected;
+            authoringOpenLegacyButton.Visible = CurrentScene != null && authoringSelection != null &&
+                (authoringSelection.Kind == "Room" || authoringSelection.Kind == "Object" ||
+                 authoringSelection.Kind == "Group" || authoringSelection.Kind == "Actor" ||
+                 authoringSelection.Kind == "Transition" || authoringSelection.Kind == "Path" ||
+                 authoringSelection.Kind == "PathPoint");
         }
 
         private void AssignAuthoringActorPath()
