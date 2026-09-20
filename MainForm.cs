@@ -822,7 +822,39 @@ namespace SharpOcarina
                 authoringTreeScene = CurrentScene;
                 authoringTreeRoom = RoomList.SelectedIndex;
                 authoringTreeDirty = false;
+
+                if (authoringSelection != null)
+                {
+                    TreeNode restoredNode = FindAuthoringNode(authoringContentTree.Nodes, authoringSelection);
+                    if (restoredNode != null)
+                        authoringContentTree.SelectedNode = restoredNode;
+                    else
+                    {
+                        authoringSelection = null;
+                        authoringDetailsGrid.SelectedObject = null;
+                        authoringSelectionLabel.Text = "Nothing selected";
+                        UpdateAuthoringActorActions();
+                    }
+                }
             }
+        }
+
+        private static TreeNode FindAuthoringNode(TreeNodeCollection nodes, AuthoringSelection selection)
+        {
+            foreach (TreeNode node in nodes)
+            {
+                AuthoringSelection nodeSelection = node.Tag as AuthoringSelection;
+                if (nodeSelection != null && nodeSelection.Kind == selection.Kind &&
+                    nodeSelection.RoomIndex == selection.RoomIndex &&
+                    nodeSelection.ItemIndex == selection.ItemIndex &&
+                    nodeSelection.PointIndex == selection.PointIndex)
+                    return node;
+
+                TreeNode childMatch = FindAuthoringNode(node.Nodes, selection);
+                if (childMatch != null) return childMatch;
+            }
+
+            return null;
         }
 
         private void UpdateAuthoringActorActions()
