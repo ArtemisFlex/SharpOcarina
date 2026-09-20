@@ -2054,7 +2054,6 @@ namespace SharpOcarina
         private static void WriteCapturedTexture(string texturePath, string textureKey, byte[] rgba)
         {
             string filename = Path.Combine(texturePath, GetCapturedTextureFilename(textureKey));
-            if (File.Exists(filename)) return;
 
             string[] parts = textureKey.Split('_');
             if (parts.Length < 3) return;
