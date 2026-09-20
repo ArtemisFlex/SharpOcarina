@@ -66,6 +66,7 @@ namespace SharpOcarina
 
             public List<ZUShort> ZObjects = new List<ZUShort>();
             public List<ZActor> ZActors = new List<ZActor>();
+            public List<RoomAuthoringPrimitive> AuthoringPrimitives = new List<RoomAuthoringPrimitive>();
             [XmlIgnore]
             public List<ObjFile.Group> TrueGroups = null;
             [XmlIgnore]
@@ -74,6 +75,50 @@ namespace SharpOcarina
             public List<NDisplayList> DLists = null;
             [XmlIgnore]
             public List<Type2Group> Type2Groups = new List<Type2Group>();
+
+            [XmlIgnore]
+            public bool AuthoringPrimitivesApplied = false;
+
+            public class RoomAuthoringPrimitive
+            {
+                public int Type;
+                public string Name = "Primitive";
+                public string MaterialName = "Default";
+                public string TexturePath = "";
+                public double MinX = -50, MinY = 0, MinZ = -50;
+                public double MaxX = 50, MaxY = 100, MaxZ = 50;
+                public int CollisionPolyType = 0;
+                public bool AddToCollision = true;
+
+                public RoomAuthoringPrimitive() { }
+
+                public RoomAuthoringPrimitive(RoomPrimitiveSpec spec)
+                {
+                    Type = (int)spec.Type;
+                    Name = spec.Name;
+                    MaterialName = spec.MaterialName;
+                    TexturePath = spec.TexturePath ?? "";
+                    MinX = spec.Min.X; MinY = spec.Min.Y; MinZ = spec.Min.Z;
+                    MaxX = spec.Max.X; MaxY = spec.Max.Y; MaxZ = spec.Max.Z;
+                    CollisionPolyType = spec.CollisionPolyType;
+                    AddToCollision = spec.AddToCollision;
+                }
+
+                public RoomPrimitiveSpec ToSpec()
+                {
+                    return new RoomPrimitiveSpec
+                    {
+                        Type = (RoomPrimitiveType)Type,
+                        Name = Name,
+                        MaterialName = MaterialName,
+                        TexturePath = string.IsNullOrEmpty(TexturePath) ? null : TexturePath,
+                        Min = new Vector3d(MinX, MinY, MinZ),
+                        Max = new Vector3d(MaxX, MaxY, MaxZ),
+                        CollisionPolyType = CollisionPolyType,
+                        AddToCollision = AddToCollision
+                    };
+                }
+            }
 
 
 

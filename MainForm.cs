@@ -414,6 +414,8 @@ namespace SharpOcarina
                 CurrentScene.ColModel = new ObjFile();
 
             RoomGeometryBuilder.Append(room.ObjModel, CurrentScene.ColModel, spec);
+            room.AuthoringPrimitives.Add(new ZScene.ZRoom.RoomAuthoringPrimitive(spec));
+            room.AuthoringPrimitivesApplied = true;
             room.TrueGroups = room.ObjModel.Groups;
             room.ObjModel.BasePath = CurrentScene.BasePath;
             CurrentScene.ColModel.BasePath = CurrentScene.BasePath;
@@ -424,6 +426,23 @@ namespace SharpOcarina
             GroupList.DataSource = null;
             GroupList.DataSource = room.TrueGroups;
             Invalidate(true);
+        }
+
+        private void ApplySavedRoomGeometry(ZScene.ZRoom room)
+        {
+            if (room == null || room.ObjModel == null || room.AuthoringPrimitivesApplied)
+                return;
+            if (room.AuthoringPrimitives == null || room.AuthoringPrimitives.Count == 0)
+                return;
+
+            if (CurrentScene.ColModel == null)
+                CurrentScene.ColModel = new ObjFile();
+
+            foreach (ZScene.ZRoom.RoomAuthoringPrimitive saved in room.AuthoringPrimitives)
+                RoomGeometryBuilder.Append(room.ObjModel, CurrentScene.ColModel, saved.ToSpec());
+
+            room.TrueGroups = room.ObjModel.Groups;
+            room.AuthoringPrimitivesApplied = true;
         }
 
         #endregion
@@ -8641,6 +8660,8 @@ namespace SharpOcarina
                     CurrentScene.prerenderimages.Add(CurrentScene.JFIFpath);
                     CurrentScene.JFIFpath = "";
                 }
+
+                ApplySavedRoomGeometry(CurrentScene.Rooms[i]);
 
                 if (!CurrentScene.PregeneratedMesh)
 
