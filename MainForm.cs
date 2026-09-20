@@ -8773,6 +8773,10 @@ namespace SharpOcarina
                 SimulateN64Gfx = true;
 
                 SimulateN64CheckBox.Checked = true;
+                // ROM snapshots retain raw room data and need the N64 preview path.
+                // Do not let a saved global preference hide the room geometry on reopen.
+                settings.ShowRoomModels = true;
+                showRoomModelsToolStripMenuItem.Checked = true;
 
                 CurrentScene.ConvertPreview(settings.ConsecutiveRoomInject, settings.ForceRGBATextures);
 
