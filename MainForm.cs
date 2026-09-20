@@ -1098,10 +1098,12 @@ namespace SharpOcarina
             }
             else if (selection.Kind == "Object")
             {
+                tabControl1.SelectedTab = tabRooms;
                 SelectRoomObject(selection.ItemIndex);
             }
             else if (selection.Kind == "Group")
             {
+                tabControl1.SelectedTab = tabRooms;
                 int groupIndex = CurrentScene.Rooms[selection.RoomIndex].ObjModel.Groups.IndexOf((ObjFile.Group)selection.Value);
                 if (groupIndex >= 0) GroupList.SelectedIndex = groupIndex;
             }
@@ -1109,7 +1111,9 @@ namespace SharpOcarina
             authoringDetailsGrid.SelectedObject = selection.Value;
             authoringSelection = selection;
             authoringSelectionLabel.Text = selection.Kind + "  |  Room " + (selection.RoomIndex < 0 ? "-" : selection.RoomIndex.ToString());
+            selectedtimer = 90;
             UpdateAuthoringActorActions();
+            glControl1.Invalidate();
         }
 
         private void UpdateAuthoringWorkspace()
