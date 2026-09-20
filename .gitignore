@@ -351,6 +351,7 @@ obj/*
 .vs/*
 bin/*
 Settings.xml
+ZeldaMsgPreview.dll
 Makefile
 .vs/SharpOcarina/v15/.suo
 setemp.xml
