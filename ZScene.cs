@@ -289,6 +289,7 @@ namespace SharpOcarina
         public byte[] TitleCard = new byte[]{};
         public string MMTitleCard = "";
         public bool AutoCollision = false;
+        [XmlIgnore]
         public Dictionary<int, string> SwitchFlagNames = new Dictionary<int, string>();
 
         [XmlIgnore]
