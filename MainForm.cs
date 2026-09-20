@@ -301,6 +301,9 @@ namespace SharpOcarina
         private PropertyGrid authoringDetailsGrid;
         private Label authoringSelectionLabel;
         private Button authoringAssignPathButton;
+        private Button authoringAddPathButton;
+        private Button authoringAddPathPointButton;
+        private Button authoringDeletePathPointButton;
         private AuthoringSelection authoringSelection;
         private bool authoringTreeDirty = true;
         private ZScene authoringTreeScene;
@@ -607,9 +610,38 @@ namespace SharpOcarina
                 UseVisualStyleBackColor = true
             };
             authoringAssignPathButton.Click += delegate { AssignAuthoringActorPath(); };
+            authoringAddPathButton = new Button
+            {
+                Text = "Add OoT pathway",
+                Dock = DockStyle.Top,
+                Height = 28,
+                UseVisualStyleBackColor = true
+            };
+            authoringAddPathButton.Click += delegate { AddAuthoringPathway(); };
+            authoringAddPathPointButton = new Button
+            {
+                Text = "Add point to selected pathway",
+                Dock = DockStyle.Top,
+                Height = 28,
+                Visible = false,
+                UseVisualStyleBackColor = true
+            };
+            authoringAddPathPointButton.Click += delegate { AddAuthoringPathPoint(); };
+            authoringDeletePathPointButton = new Button
+            {
+                Text = "Delete selected pathway point",
+                Dock = DockStyle.Top,
+                Height = 28,
+                Visible = false,
+                UseVisualStyleBackColor = true
+            };
+            authoringDeletePathPointButton.Click += delegate { DeleteAuthoringPathPoint(); };
             authoringDetailsGrid = new PropertyGrid { Dock = DockStyle.Fill, ToolbarVisible = false, HelpVisible = true, PropertySort = PropertySort.Categorized };
             authoringDetailsGrid.PropertyValueChanged += delegate { authoringTreeDirty = true; UpdateForm(); };
             panel.Controls.Add(authoringDetailsGrid);
+            panel.Controls.Add(authoringDeletePathPointButton);
+            panel.Controls.Add(authoringAddPathPointButton);
+            panel.Controls.Add(authoringAddPathButton);
             panel.Controls.Add(authoringAssignPathButton);
             panel.Controls.Add(authoringSelectionLabel);
             return panel;
@@ -738,6 +770,16 @@ namespace SharpOcarina
             }
 
             authoringAssignPathButton.Visible = canAssignPath;
+
+            bool pathSelected = CurrentScene != null && authoringSelection != null &&
+                (authoringSelection.Kind == "Path" || authoringSelection.Kind == "PathPoint") &&
+                authoringSelection.ItemIndex >= 0 && authoringSelection.ItemIndex < CurrentScene.Pathways.Count;
+            bool pointSelected = pathSelected && authoringSelection.Kind == "PathPoint" &&
+                authoringSelection.PointIndex >= 0 &&
+                authoringSelection.PointIndex < CurrentScene.Pathways[authoringSelection.ItemIndex].Points.Count;
+            authoringAddPathButton.Visible = CurrentScene != null;
+            authoringAddPathPointButton.Visible = pathSelected;
+            authoringDeletePathPointButton.Visible = pointSelected;
         }
 
         private void AssignAuthoringActorPath()
@@ -811,6 +853,44 @@ namespace SharpOcarina
                 authoringTreeDirty = true;
                 UpdateForm();
             }
+        }
+
+        private void AddAuthoringPathway()
+        {
+            if (CurrentScene == null || CurrentScene.Pathways.Count >= 0x0F) return;
+            actorpick = _Pathway_;
+            AddPathwayButton_Click(PathwayAddButton, new MouseEventArgs(MouseButtons.Left, 1, 0, 0, 0));
+            authoringTreeDirty = true;
+            UpdateForm();
+        }
+
+        private void AddAuthoringPathPoint()
+        {
+            if (CurrentScene == null || authoringSelection == null ||
+                (authoringSelection.Kind != "Path" && authoringSelection.Kind != "PathPoint") ||
+                authoringSelection.ItemIndex < 0 || authoringSelection.ItemIndex >= CurrentScene.Pathways.Count)
+                return;
+            actorpick = _Pathway_;
+            PathwayNumber.Value = authoringSelection.ItemIndex;
+            UpdatePathwayEdit();
+            AddPointButton.PerformClick();
+            authoringTreeDirty = true;
+            UpdateForm();
+        }
+
+        private void DeleteAuthoringPathPoint()
+        {
+            if (CurrentScene == null || authoringSelection == null || authoringSelection.Kind != "PathPoint" ||
+                authoringSelection.ItemIndex < 0 || authoringSelection.ItemIndex >= CurrentScene.Pathways.Count ||
+                authoringSelection.PointIndex < 0 || authoringSelection.PointIndex >= CurrentScene.Pathways[authoringSelection.ItemIndex].Points.Count)
+                return;
+            actorpick = _Pathway_;
+            PathwayNumber.Value = authoringSelection.ItemIndex;
+            UpdatePathwayEdit();
+            PathwayListBox.SelectedIndex = authoringSelection.PointIndex;
+            DeletePointButton.PerformClick();
+            authoringTreeDirty = true;
+            UpdateForm();
         }
 
         private void AddAuthoringSceneNodes(TreeNode sceneNode, string filter)
