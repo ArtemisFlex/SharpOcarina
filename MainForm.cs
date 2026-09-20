@@ -311,10 +311,16 @@ namespace SharpOcarina
             public string Kind;
             public int RoomIndex;
             public int ItemIndex;
+            public int PointIndex;
             public object Value;
             public AuthoringSelection(string kind, int roomIndex, int itemIndex, object value)
             {
-                Kind = kind; RoomIndex = roomIndex; ItemIndex = itemIndex; Value = value;
+                Kind = kind; RoomIndex = roomIndex; ItemIndex = itemIndex; PointIndex = -1; Value = value;
+            }
+            public AuthoringSelection(string kind, int roomIndex, int itemIndex, object value, int pointIndex)
+                : this(kind, roomIndex, itemIndex, value)
+            {
+                PointIndex = pointIndex;
             }
         }
 
@@ -629,6 +635,22 @@ namespace SharpOcarina
                 actorEditControl.ActorNumber = selection.ItemIndex;
                 actorEditControl.UpdateActorEdit();
             }
+            else if (selection.Kind == "Transition")
+            {
+                actorpick = _Transition_;
+                tabControl1.SelectedTab = tabTransitions;
+                transitionEditControl.SetActors(ref CurrentScene.Transitions);
+                transitionEditControl.ActorNumber = selection.ItemIndex;
+            }
+            else if (selection.Kind == "Path" || selection.Kind == "PathPoint")
+            {
+                actorpick = _Pathway_;
+                tabControl1.SelectedTab = tabPathways;
+                PathwayNumber.Value = selection.ItemIndex;
+                UpdatePathwayEdit();
+                if (selection.Kind == "PathPoint" && selection.Value is Vector3)
+                    PathwayListBox.SelectedIndex = Clamp(selection.PointIndex, 0, PathwayListBox.Items.Count - 1);
+            }
             else if (selection.Kind == "Object")
             {
                 SelectRoomObject(selection.ItemIndex);
@@ -660,6 +682,7 @@ namespace SharpOcarina
                 authoringContentTree.Nodes.Clear();
                 string filter = (authoringSearchBox == null ? "" : authoringSearchBox.Text).Trim().ToLowerInvariant();
                 TreeNode sceneNode = new TreeNode(string.IsNullOrEmpty(CurrentScene.Name) ? "Scene" : CurrentScene.Name);
+                AddAuthoringSceneNodes(sceneNode, filter);
                 for (int roomIndex = 0; roomIndex < CurrentScene.Rooms.Count; roomIndex++)
                 {
                     ZScene.ZRoom room = CurrentScene.Rooms[roomIndex];
@@ -676,6 +699,47 @@ namespace SharpOcarina
                 authoringTreeRoom = RoomList.SelectedIndex;
                 authoringTreeDirty = false;
             }
+        }
+
+        private void AddAuthoringSceneNodes(TreeNode sceneNode, string filter)
+        {
+            TreeNode transitions = new TreeNode("Transitions / Exits");
+            for (int i = 0; i < CurrentScene.Transitions.Count; i++)
+            {
+                ZActor transition = CurrentScene.Transitions[i];
+                string text = "Transition " + i + "  Actor " + transition.Number.ToString("X4") +
+                    "  Rooms " + transition.FrontSwitchTo + " -> " + transition.BackSwitchTo;
+                if (string.IsNullOrEmpty(filter) || text.ToLowerInvariant().Contains(filter))
+                    transitions.Nodes.Add(new TreeNode(text) { Tag = new AuthoringSelection("Transition", -1, i, transition) });
+            }
+            if (transitions.Nodes.Count > 0 || string.IsNullOrEmpty(filter))
+                sceneNode.Nodes.Add(transitions);
+
+            TreeNode pathways = new TreeNode("Pathways / Patrols");
+            for (int i = 0; i < CurrentScene.Pathways.Count; i++)
+            {
+                ZPathway path = CurrentScene.Pathways[i];
+                TreeNode pathNode = new TreeNode("Path " + i + "  Points " + path.Points.Count)
+                {
+                    Tag = new AuthoringSelection("Path", -1, i, path)
+                };
+                for (int pointIndex = 0; pointIndex < path.Points.Count; pointIndex++)
+                {
+                    Vector3 point = path.Points[pointIndex];
+                    string text = "Point " + pointIndex + "  (" + Math.Floor(point.X) + ", " +
+                        Math.Floor(point.Y) + ", " + Math.Floor(point.Z) + ")";
+                    if (string.IsNullOrEmpty(filter) || text.ToLowerInvariant().Contains(filter) ||
+                        pathNode.Text.ToLowerInvariant().Contains(filter))
+                        pathNode.Nodes.Add(new TreeNode(text)
+                        {
+                            Tag = new AuthoringSelection("PathPoint", -1, i, point, pointIndex)
+                        });
+                }
+                if (pathNode.Nodes.Count > 0 || string.IsNullOrEmpty(filter) || pathNode.Text.ToLowerInvariant().Contains(filter))
+                    pathways.Nodes.Add(pathNode);
+            }
+            if (pathways.Nodes.Count > 0 || string.IsNullOrEmpty(filter))
+                sceneNode.Nodes.Add(pathways);
         }
 
         private static void AddAuthoringRoomNodes(TreeNode roomNode, ZScene.ZRoom room, int roomIndex, string filter)
