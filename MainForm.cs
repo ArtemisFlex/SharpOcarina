@@ -747,7 +747,7 @@ namespace SharpOcarina
 
         private void OpenAuthoringSelectionInLegacyEditor()
         {
-            if (CurrentScene == null || authoringSelection == null) return;
+            if (!CanOpenAuthoringSelectionInLegacyEditor()) return;
 
             if (authoringSelection.RoomIndex >= 0 && authoringSelection.RoomIndex < CurrentScene.Rooms.Count)
                 RoomList.SelectedIndex = authoringSelection.RoomIndex;
@@ -789,6 +789,37 @@ namespace SharpOcarina
                         if (groupIndex >= 0) GroupList.SelectedIndex = groupIndex;
                     }
                     break;
+            }
+        }
+
+        private bool CanOpenAuthoringSelectionInLegacyEditor()
+        {
+            if (CurrentScene == null || authoringSelection == null) return false;
+
+            int room = authoringSelection.RoomIndex;
+            switch (authoringSelection.Kind)
+            {
+                case "Room":
+                    return room >= 0 && room < CurrentScene.Rooms.Count;
+                case "Actor":
+                    return room >= 0 && room < CurrentScene.Rooms.Count &&
+                        authoringSelection.ItemIndex >= 0 && authoringSelection.ItemIndex < CurrentScene.Rooms[room].ZActors.Count;
+                case "Object":
+                    return room >= 0 && room < CurrentScene.Rooms.Count &&
+                        authoringSelection.ItemIndex >= 0 && authoringSelection.ItemIndex < CurrentScene.Rooms[room].ZObjects.Count;
+                case "Group":
+                    return room >= 0 && room < CurrentScene.Rooms.Count &&
+                        CurrentScene.Rooms[room].ObjModel != null && authoringSelection.Value is ObjFile.Group &&
+                        CurrentScene.Rooms[room].ObjModel.Groups.Contains((ObjFile.Group)authoringSelection.Value);
+                case "Transition":
+                    return authoringSelection.ItemIndex >= 0 && authoringSelection.ItemIndex < CurrentScene.Transitions.Count;
+                case "Path":
+                    return authoringSelection.ItemIndex >= 0 && authoringSelection.ItemIndex < CurrentScene.Pathways.Count;
+                case "PathPoint":
+                    return authoringSelection.ItemIndex >= 0 && authoringSelection.ItemIndex < CurrentScene.Pathways.Count &&
+                        authoringSelection.PointIndex >= 0 && authoringSelection.PointIndex < CurrentScene.Pathways[authoringSelection.ItemIndex].Points.Count;
+                default:
+                    return false;
             }
         }
 
@@ -946,11 +977,7 @@ namespace SharpOcarina
             authoringAddPathButton.Visible = CurrentScene != null;
             authoringAddPathPointButton.Visible = pathSelected;
             authoringDeletePathPointButton.Visible = pointSelected;
-            authoringOpenLegacyButton.Visible = CurrentScene != null && authoringSelection != null &&
-                (authoringSelection.Kind == "Room" || authoringSelection.Kind == "Object" ||
-                 authoringSelection.Kind == "Group" || authoringSelection.Kind == "Actor" ||
-                 authoringSelection.Kind == "Transition" || authoringSelection.Kind == "Path" ||
-                 authoringSelection.Kind == "PathPoint");
+            authoringOpenLegacyButton.Visible = CanOpenAuthoringSelectionInLegacyEditor();
         }
 
         private void AssignAuthoringActorPath()
