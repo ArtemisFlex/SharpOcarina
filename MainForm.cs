@@ -18274,6 +18274,9 @@ namespace SharpOcarina
                             ObjFile objfile = importCollision(data, y);
                             if (objfile != null)
                             {
+                                // ROM scene imports write temporary collision meshes here.
+                                // Create the folder so a clean SharpOcarina install can import scenes.
+                                Directory.CreateDirectory("Import");
 
                                 string colfilename = objfile.ConvertToObject("Import/Collision_" + DateTime.Now.Ticks.ToString());
                                 returnScene.ColModel = new ObjFile(colfilename, true);
