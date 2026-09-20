@@ -556,6 +556,12 @@ namespace SharpOcarina
                 authoringTreeDirty = true;
                 UpdateAuthoringWorkspace();
             });
+            Button focusViewport = CreateViewportToggle("Focus", delegate
+            {
+                bool restorePanels = authoringShellSplit.Panel1Collapsed && authoringCenterDetailsSplit.Panel2Collapsed;
+                authoringShellSplit.Panel1Collapsed = !restorePanels;
+                authoringCenterDetailsSplit.Panel2Collapsed = !restorePanels;
+            });
             Label roomLabel = new Label { Text = "Room", AutoSize = true, Padding = new Padding(4, 4, 0, 0) };
             authoringRoomSelector = new ComboBox
             {
@@ -568,6 +574,7 @@ namespace SharpOcarina
             viewportToolbar.Controls.Add(contentToggle);
             viewportToolbar.Controls.Add(detailsToggle);
             viewportToolbar.Controls.Add(refreshAuthoring);
+            viewportToolbar.Controls.Add(focusViewport);
             viewportToolbar.Controls.Add(roomLabel);
             viewportToolbar.Controls.Add(authoringRoomSelector);
             viewportHost.Controls.Add(glControl1);
