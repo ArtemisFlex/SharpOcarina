@@ -1488,8 +1488,10 @@ namespace SharpOcarina
                 foreach (Triangle Tri in TrueGroups[i].Triangles)
                 {
                     Material Mat = GetMaterial(Tri.MaterialName);
-                    if (Mat != null)
+                    if (Mat != null && Mat.GLID != 0)
                     {
+                        GL.Enable(EnableCap.Texture2D);
+                        GL.Color4(1.0f, 1.0f, 1.0f, 1.0f);
                         GL.BindTexture(TextureTarget.Texture2D, Mat.GLID);
 
                         GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS, (int)All.Repeat);
@@ -1508,6 +1510,17 @@ namespace SharpOcarina
                                 GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT, (int)All.ClampToEdge);
                         }
 
+                    }
+                    else if (Mat != null)
+                    {
+                        // Imported ROM geometry often has a valid diffuse-color fallback
+                        // without a decoded texture file. Never sample texture 0: on some
+                        // drivers it is black and hides the captured material color.
+                        GL.Disable(EnableCap.Texture2D);
+                        float red = Mat.Kd != null && Mat.Kd.Length > 0 ? Mat.Kd[0] : 1.0f;
+                        float green = Mat.Kd != null && Mat.Kd.Length > 1 ? Mat.Kd[1] : 1.0f;
+                        float blue = Mat.Kd != null && Mat.Kd.Length > 2 ? Mat.Kd[2] : 1.0f;
+                        GL.Color4(red, green, blue, 1.0f);
                     }
 
                     DrawTriangle(Tri, Mat);

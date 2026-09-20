@@ -2243,6 +2243,8 @@ namespace SharpOcarina
                         _Rooms[i].ModelShortFilename = Path.GetFileNameWithoutExtension(modelPath);
                         _Rooms[i].ObjModel = new ObjFile(modelPath);
                         _Rooms[i].TrueGroups = _Rooms[i].ObjModel.Groups;
+                        _Rooms[i].ObjModel.BasePath = Path.GetDirectoryName(modelPath) + Path.DirectorySeparatorChar;
+                        _Rooms[i].ObjModel.Prepare(_Rooms[i].TrueGroups);
                     }
                 }
                 else
