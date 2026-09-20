@@ -545,8 +545,14 @@ namespace SharpOcarina
             };
             Button contentToggle = CreateViewportToggle("Content", delegate { authoringShellSplit.Panel1Collapsed = !authoringShellSplit.Panel1Collapsed; });
             Button detailsToggle = CreateViewportToggle("Details", delegate { authoringCenterDetailsSplit.Panel2Collapsed = !authoringCenterDetailsSplit.Panel2Collapsed; });
+            Button refreshAuthoring = CreateViewportToggle("Refresh", delegate
+            {
+                authoringTreeDirty = true;
+                UpdateAuthoringWorkspace();
+            });
             viewportToolbar.Controls.Add(contentToggle);
             viewportToolbar.Controls.Add(detailsToggle);
+            viewportToolbar.Controls.Add(refreshAuthoring);
             viewportHost.Controls.Add(glControl1);
             viewportHost.Controls.Add(viewportToolbar);
             authoringCenterDetailsSplit.Panel1.Controls.Add(viewportHost);
@@ -11776,6 +11782,7 @@ namespace SharpOcarina
         {
             StoreUndo(_Pathway_);
             CurrentScene.Pathways.Add(new ZPathway(new List<Vector3>()));
+            authoringTreeDirty = true;
             UpdatePathwayEdit();
             Helpers.SelectAdd(PathwayNumber, CurrentScene.Pathways);
             
@@ -11790,6 +11797,7 @@ namespace SharpOcarina
                 StoreUndo(_Pathway_);
                 ZPathway Del = CurrentScene.Pathways[(int)PathwayNumber.Value];
                 CurrentScene.Pathways.Remove(Del);
+                authoringTreeDirty = true;
                 if (CurrentScene.Pathways.Count == 0) PathwayListBox.Items.Clear();
                     UpdatePathwayEdit();
             }
@@ -11811,6 +11819,7 @@ namespace SharpOcarina
 
             CurrentScene.Pathways[(int)PathwayNumber.Value].Points[PathwayListBox.SelectedIndex] = new Vector3((float)PathwayXPos.Value, (float)PathwayYPos.Value, (float)PathwayZPos.Value);
 
+            authoringTreeDirty = true;
             UpdatePathwayEdit();
         }
 
@@ -11821,6 +11830,7 @@ namespace SharpOcarina
 
             CurrentScene.Pathways[(int)PathwayNumber.Value].Points[PathwayListBox.SelectedIndex] = new Vector3((float)PathwayXPos.Value, (float)PathwayYPos.Value, (float)PathwayZPos.Value);
 
+            authoringTreeDirty = true;
             UpdatePathwayEdit();
         }
 
@@ -11831,12 +11841,14 @@ namespace SharpOcarina
 
             CurrentScene.Pathways[(int)PathwayNumber.Value].Points[PathwayListBox.SelectedIndex] = new Vector3((float)PathwayXPos.Value, (float)PathwayYPos.Value, (float)PathwayZPos.Value);
 
+            authoringTreeDirty = true;
             UpdatePathwayEdit();
         }
 
         private void PathwayListBox_Click(object sender, EventArgs e)
         {
             actorpick = _Pathway_;
+            authoringTreeDirty = true;
             UpdatePathwayEdit();
 
         }
@@ -11872,6 +11884,7 @@ namespace SharpOcarina
                 truepos.Z = Clamp(truepos.Z, -32767, 32767);
 
                 CurrentScene.Pathways[(int)PathwayNumber.Value].Points.Add((Vector3)truepos);
+                authoringTreeDirty = true;
                 UpdatePathwayEdit();
             }
 
@@ -11894,11 +11907,13 @@ namespace SharpOcarina
                 }
 
                 CurrentScene.Pathways[(int)PathwayNumber.Value].Points.Add(Vector3.Lerp(MinCoordinate, MaxCoordinate, 0.5f));
+                authoringTreeDirty = true;
                 UpdatePathwayEdit();
             }
             else
             {
                 CurrentScene.Pathways[(int)PathwayNumber.Value].Points.Add(CurrentScene.Pathways[(int)PathwayNumber.Value].Points[CurrentScene.Pathways[(int)PathwayNumber.Value].Points.Count - 1]);
+                authoringTreeDirty = true;
                 UpdatePathwayEdit();
             }
             if (PathwayListBox.Items.Count == 1) PathwayListBox.SelectedIndex = 0;
@@ -11917,6 +11932,7 @@ namespace SharpOcarina
             StoreUndo(_Pathway_);
 
             CurrentScene.Pathways[(int)PathwayNumber.Value].Points.RemoveAt(PathwayListBox.SelectedIndex);
+            authoringTreeDirty = true;
             if (PathwayListBox.SelectedIndex >= CurrentScene.Pathways[(int)PathwayNumber.Value].Points.Count) PathwayListBox.SelectedIndex--;
             if (CurrentScene.Pathways[(int)PathwayNumber.Value].Points.Count == 0) PathwayListBox.Items.Clear();
             UpdatePathwayEdit();
@@ -16671,6 +16687,7 @@ namespace SharpOcarina
             CurrentScene.Pathways[(int)(PathwayNumber.Value)].Points.RemoveAt(PathwayListBox.SelectedIndex);
             CurrentScene.Pathways[(int)(PathwayNumber.Value)].Points.Insert(PathwayListBox.SelectedIndex - 1, item);
             PathwayListBox.SelectedIndex--;
+            authoringTreeDirty = true;
             UpdatePathwayEdit();
         }
 
@@ -16682,6 +16699,7 @@ namespace SharpOcarina
             CurrentScene.Pathways[(int)(PathwayNumber.Value)].Points.RemoveAt(PathwayListBox.SelectedIndex);
             CurrentScene.Pathways[(int)(PathwayNumber.Value)].Points.Insert(PathwayListBox.SelectedIndex + 1, item);
             PathwayListBox.SelectedIndex++;
+            authoringTreeDirty = true;
             UpdatePathwayEdit();
         }
 
