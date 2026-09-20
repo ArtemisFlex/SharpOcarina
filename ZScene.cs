@@ -131,6 +131,8 @@ namespace SharpOcarina
                 public bool[] RenderLast = new bool[1];
                 public bool[] VertexNormals = new bool[1];
                 public bool[] Custom = new bool[1];
+                // Runtime display-list overrides are not part of the XML scene format.
+                [XmlIgnore]
                 public ulong[,] CustomDL = new ulong[1,4];
                 public bool[] ScaledNormals = new bool[1];
                 public bool[] TexPointerPlus1 = new bool[1];
