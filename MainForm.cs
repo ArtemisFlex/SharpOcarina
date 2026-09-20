@@ -307,6 +307,15 @@ namespace SharpOcarina
             roomGeometryMenu.Click += delegate { using (RoomGeometryEditor editor = new RoomGeometryEditor(this)) editor.ShowDialog(this); };
             extraToolStripMenuItem.DropDownItems.Add(new ToolStripSeparator());
             extraToolStripMenuItem.DropDownItems.Add(roomGeometryMenu);
+            ToolStripMenuItem assetBrowserMenu = new ToolStripMenuItem("Room Asset Browser");
+            assetBrowserMenu.ToolTipText = "Preview loaded textures, materials, and room model groups";
+            assetBrowserMenu.Click += delegate
+            {
+                ZScene.ZRoom room = CurrentScene != null && RoomList.SelectedIndex >= 0 && RoomList.SelectedIndex < CurrentScene.Rooms.Count
+                    ? CurrentScene.Rooms[RoomList.SelectedIndex] : null;
+                using (RoomAssetBrowser browser = new RoomAssetBrowser(room)) browser.ShowDialog(this);
+            };
+            extraToolStripMenuItem.DropDownItems.Add(assetBrowserMenu);
 
 
             this.args = args;
