@@ -3013,6 +3013,8 @@ namespace SharpOcarina
 
 
             /* Process rooms... */
+            if (MainForm.n64preview && PregeneratedMesh)
+                SayakaGL.UcodeSimulator.BeginTextureCapture();
             for (int i = 0; i < _Rooms.Count; i++)
             {
 
@@ -3697,6 +3699,21 @@ namespace SharpOcarina
                         {
                             SayakaGL.UcodeSimulator.ReadDL(0, DL, ref _Rooms[i].N64DLists);
                             
+                        }
+
+                        if (PregeneratedMesh)
+                        {
+                            SayakaGL.UcodeSimulator.BeginGeometryCapture();
+                            SayakaGL.UcodeSimulator.ParseAllDLs(ref _Rooms[i].N64DLists);
+                            List<SayakaGL.UcodeSimulator.CapturedTriangle> triangles = SayakaGL.UcodeSimulator.EndGeometryCapture();
+                            if (triangles.Count > 0)
+                            {
+                                string modelPath = WriteCapturedRoomObj(i, triangles);
+                                _Rooms[i].ModelFilename = modelPath;
+                                _Rooms[i].ModelShortFilename = Path.GetFileNameWithoutExtension(modelPath);
+                                _Rooms[i].ObjModel = new ObjFile(modelPath);
+                                _Rooms[i].TrueGroups = _Rooms[i].ObjModel.Groups;
+                            }
                         }
 
                         //we make room for the display lists

@@ -2487,6 +2487,18 @@ namespace SharpOcarina
 
                             GL.PopMatrix();
                         }
+                        else if (Room.ObjModel != null && Room.ObjModel.Vertices.Count > 0)
+                        {
+                            GL.PushMatrix();
+                            GL.Scale(CurrentScene.Scale, CurrentScene.Scale, CurrentScene.Scale);
+                            GL.Enable(EnableCap.Texture2D);
+                            for (int i = 0; i < Room.TrueGroups.Count; i++)
+                            {
+                                GL.Color4(Color.FromArgb((int)Room.TrueGroups[i].TintAlpha));
+                                Room.ObjModel.Render(Room.TrueGroups[i]);
+                            }
+                            GL.PopMatrix();
+                        }
                         else if (Room.N64DLists != null)
                         {//aaa
 
@@ -8785,6 +8797,10 @@ namespace SharpOcarina
             {
                 CurrentScene.ConvertPreview(settings.ConsecutiveRoomInject, settings.ForceRGBATextures);
             }
+
+            if (CurrentScene.PregeneratedMesh && CurrentScene.Rooms.Count > 0 &&
+                CurrentScene.Rooms.All(room => room.ObjModel != null && room.ObjModel.Vertices.Count > 0))
+                CurrentScene.PregeneratedMesh = false;
 
             if (!CurrentScene.PregeneratedMesh)
             {
