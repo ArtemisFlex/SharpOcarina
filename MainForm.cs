@@ -8237,24 +8237,28 @@ namespace SharpOcarina
 
         private void SelectRoom(int Index)
         {
-            if (CurrentScene == null || RoomList == null || RoomList.SelectedIndex < 0 ||
-                RoomList.SelectedIndex >= CurrentScene.Rooms.Count || Index < 0 ||
-                Index >= CurrentScene.Rooms.Count)
+            if (CurrentScene == null || RoomList == null || CurrentScene.Rooms == null ||
+                Index < 0 || Index >= CurrentScene.Rooms.Count)
             {
                 GroupList.DataSource = null;
                 return;
+            }
+
+            if (RoomList.SelectedIndex != Index)
+            {
+                RoomList.SelectedIndex = Index;
             }
 
             GroupList.BeginUpdate();
             if (customcombiner != null) customcombiner.Close();
             if (Index >= 0 && !CurrentScene.PregeneratedMesh)
             {
-                if (CurrentScene.Rooms[RoomList.SelectedIndex].TrueGroups.Count > 0) GroupList.DataSource = CurrentScene.Rooms[RoomList.SelectedIndex].TrueGroups;
+                if (CurrentScene.Rooms[Index].TrueGroups.Count > 0) GroupList.DataSource = CurrentScene.Rooms[Index].TrueGroups;
                 else
                 {
                     if (!CurrentScene.NewRoomMode)
                     {
-                        GroupList.DataSource = CurrentScene.Rooms[RoomList.SelectedIndex].ObjModel.Groups;
+                        GroupList.DataSource = CurrentScene.Rooms[Index].ObjModel.Groups;
                     }
                     else
                     {
@@ -8278,8 +8282,8 @@ namespace SharpOcarina
 
             if (RoomList.SelectedItem != null)
             {
-                actorEditControl.SetActors(ref CurrentScene.Rooms[RoomList.SelectedIndex].ZActors);
-                if (!CurrentScene.PregeneratedMesh) actorEditControl.CenterPoint = GetCenterPoint(CurrentScene.Rooms[RoomList.SelectedIndex].ObjModel.Vertices);
+                actorEditControl.SetActors(ref CurrentScene.Rooms[Index].ZActors);
+                if (!CurrentScene.PregeneratedMesh) actorEditControl.CenterPoint = GetCenterPoint(CurrentScene.Rooms[Index].ObjModel.Vertices);
             }
             else
                 actorEditControl.ClearActors();
@@ -19621,6 +19625,19 @@ namespace SharpOcarina
             RoomList.DataSource = null;
             RoomList.DataSource = CurrentScene.Rooms;
             RoomList.DisplayMember = "ModelShortFilename";
+
+            if (CurrentScene.Rooms == null || CurrentScene.Rooms.Count == 0)
+            {
+                NowLoading = false;
+                UpdateForm();
+                MessageBox.Show("This scene contains no readable rooms.", "Scene Load", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            if (RoomList.SelectedIndex < 0 || RoomList.SelectedIndex >= CurrentScene.Rooms.Count)
+            {
+                RoomList.SelectedIndex = 0;
+            }
 
             while (CurrentScene.SegmentFunctions.Count < 8)
             {
