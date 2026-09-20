@@ -300,6 +300,7 @@ namespace SharpOcarina
         {
             Text = Program.ApplicationTitle;
             InitializeComponent();
+            InitializeLayoutManifestIntegration();
 
 
             this.args = args;
