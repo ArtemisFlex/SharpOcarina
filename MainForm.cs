@@ -425,6 +425,9 @@ namespace SharpOcarina
             RoomGeometryBuilder.Append(room.ObjModel, CurrentScene.ColModel, spec);
             room.AuthoringPrimitives.Add(new ZScene.ZRoom.RoomAuthoringPrimitive(spec));
             room.AuthoringPrimitivesApplied = true;
+            // Authored geometry must use SharpOcarina's normal N64 display-list
+            // rebuild path; the pregenerated path intentionally preserves old ROM bytes.
+            CurrentScene.PregeneratedMesh = false;
             room.TrueGroups = room.ObjModel.Groups;
             room.ObjModel.BasePath = CurrentScene.BasePath;
             CurrentScene.ColModel.BasePath = CurrentScene.BasePath;
@@ -452,6 +455,7 @@ namespace SharpOcarina
 
             room.TrueGroups = room.ObjModel.Groups;
             room.AuthoringPrimitivesApplied = true;
+            CurrentScene.PregeneratedMesh = false;
         }
 
         #endregion
