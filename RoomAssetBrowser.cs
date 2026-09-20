@@ -10,11 +10,13 @@ namespace SharpOcarina
 {
     internal sealed class RoomAssetBrowser : Form
     {
+        private readonly MainForm owner;
         private readonly ZScene.ZRoom room;
         private readonly TabControl tabs = new TabControl { Dock = DockStyle.Fill };
 
-        public RoomAssetBrowser(ZScene.ZRoom room)
+        public RoomAssetBrowser(MainForm owner, ZScene.ZRoom room)
         {
+            this.owner = owner;
             this.room = room;
             Text = "Room Asset Browser";
             StartPosition = FormStartPosition.CenterParent;
@@ -154,10 +156,11 @@ namespace SharpOcarina
             preview.Location = new Point(10, 10);
             tile.Controls.Add(preview);
             tile.Controls.Add(new Label { Text = "Var " + actor.Variable.ToString("X4"), AutoSize = true, Location = new Point(10, 112) });
+            AddPlacementButton(tile, "Place actor", delegate { owner.PlaceActorFromAsset(actor); });
             return tile;
         }
 
-        private static Control CreateObjectTile(ZScene.ZUShort objectId)
+        private Control CreateObjectTile(ZScene.ZUShort objectId)
         {
             Panel tile = CreateTile("Object " + objectId.Value.ToString("X4"));
             PictureBox preview = new PictureBox { Width = 128, Height = 96, SizeMode = PictureBoxSizeMode.CenterImage, BackColor = Color.FromArgb(42, 42, 42) };
@@ -176,7 +179,15 @@ namespace SharpOcarina
             preview.Image = image;
             preview.Location = new Point(10, 10);
             tile.Controls.Add(preview);
+            AddPlacementButton(tile, "Place object", delegate { owner.PlaceObjectFromAsset(objectId.Value); });
             return tile;
+        }
+
+        private static void AddPlacementButton(Panel tile, string text, EventHandler handler)
+        {
+            Button button = new Button { Text = text, Width = 128, Height = 24, Location = new Point(10, 132) };
+            button.Click += handler;
+            tile.Controls.Add(button);
         }
 
         private static Bitmap RenderActorThumbnail(ZActor actor)
@@ -217,8 +228,8 @@ namespace SharpOcarina
 
         private static Panel CreateTile(string title)
         {
-            Panel tile = new Panel { Width = 150, Height = 158, BorderStyle = BorderStyle.FixedSingle, Margin = new Padding(6) };
-            Label label = new Label { Text = title ?? "", AutoEllipsis = true, Width = 128, Height = 22, Location = new Point(10, 134) };
+            Panel tile = new Panel { Width = 150, Height = 190, BorderStyle = BorderStyle.FixedSingle, Margin = new Padding(6) };
+            Label label = new Label { Text = title ?? "", AutoEllipsis = true, Width = 128, Height = 22, Location = new Point(10, 158) };
             tile.Controls.Add(label);
             return tile;
         }

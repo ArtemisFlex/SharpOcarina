@@ -313,7 +313,7 @@ namespace SharpOcarina
             {
                 ZScene.ZRoom room = CurrentScene != null && RoomList.SelectedIndex >= 0 && RoomList.SelectedIndex < CurrentScene.Rooms.Count
                     ? CurrentScene.Rooms[RoomList.SelectedIndex] : null;
-                using (RoomAssetBrowser browser = new RoomAssetBrowser(room)) browser.ShowDialog(this);
+                using (RoomAssetBrowser browser = new RoomAssetBrowser(this, room)) browser.ShowDialog(this);
             };
             extraToolStripMenuItem.DropDownItems.Add(assetBrowserMenu);
 
@@ -438,6 +438,51 @@ namespace SharpOcarina
             GroupList.DataSource = null;
             GroupList.DataSource = room.TrueGroups;
             Invalidate(true);
+        }
+
+        public void PlaceActorFromAsset(ZActor source)
+        {
+            if (CurrentScene == null || source == null || RoomList.SelectedIndex < 0 || RoomList.SelectedIndex >= CurrentScene.Rooms.Count)
+                return;
+
+            ZScene.ZRoom room = CurrentScene.Rooms[RoomList.SelectedIndex];
+            ZActor placed = source.Clone();
+            Vector3d center = GetRoomAuthoringCenter(room);
+            placed.XPos = (float)center.X;
+            placed.YPos = (float)center.Y;
+            placed.ZPos = (float)center.Z;
+            room.ZActors.Add(placed);
+            actorEditControl.SetActors(ref room.ZActors);
+            actorEditControl.UpdateActorEdit();
+            UpdateForm();
+            Invalidate(true);
+        }
+
+        public void PlaceObjectFromAsset(ushort objectId)
+        {
+            if (CurrentScene == null || RoomList.SelectedIndex < 0 || RoomList.SelectedIndex >= CurrentScene.Rooms.Count)
+                return;
+
+            ZScene.ZRoom room = CurrentScene.Rooms[RoomList.SelectedIndex];
+            room.ZObjects.Add(new ZScene.ZUShort(objectId));
+            UpdateObjectEdit();
+            SelectRoomObject(room.ZObjects.Count - 1);
+            UpdateForm();
+        }
+
+        private static Vector3d GetRoomAuthoringCenter(ZScene.ZRoom room)
+        {
+            if (room != null && room.ObjModel != null && room.ObjModel.Vertices.Count > 0)
+            {
+                double minX = room.ObjModel.Vertices.Min(v => v.X);
+                double maxX = room.ObjModel.Vertices.Max(v => v.X);
+                double minY = room.ObjModel.Vertices.Min(v => v.Y);
+                double maxY = room.ObjModel.Vertices.Max(v => v.Y);
+                double minZ = room.ObjModel.Vertices.Min(v => v.Z);
+                double maxZ = room.ObjModel.Vertices.Max(v => v.Z);
+                return new Vector3d((minX + maxX) / 2.0, minY, (minZ + maxZ) / 2.0);
+            }
+            return new Vector3d(0, 0, 0);
         }
 
         private void ApplySavedRoomGeometry(ZScene.ZRoom room)
