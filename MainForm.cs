@@ -19019,9 +19019,10 @@ namespace SharpOcarina
                             {
                                 // ROM scene imports write temporary collision meshes here.
                                 // Create the folder so a clean SharpOcarina install can import scenes.
-                                Directory.CreateDirectory("Import");
+                                string importPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Import");
+                                Directory.CreateDirectory(importPath);
 
-                                string colfilename = objfile.ConvertToObject("Import/Collision_" + DateTime.Now.Ticks.ToString());
+                                string colfilename = objfile.ConvertToObject(Path.Combine(importPath, "Collision_" + DateTime.Now.Ticks.ToString()));
                                 returnScene.ColModel = new ObjFile(colfilename, true);
 
                                 CollisionTextbox.Text = saveFileDialog1.FileName;
