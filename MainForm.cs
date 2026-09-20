@@ -3150,8 +3150,20 @@ namespace SharpOcarina
                             GL.Enable(EnableCap.CullFace);
                             GL.CullFace(CullFaceMode.Back);
 
-                            /* Faked environmental lighting... */
-                            if (settings.ApplyEnvLighting)
+                            bool hasEditableRoomModel = Room.ObjModel != null && Room.ObjModel.Vertices.Count > 0;
+                            if (hasEditableRoomModel)
+                            {
+                                // Imported/editable OBJ rooms must not inherit the N64 preview's
+                                // lighting state. Their materials already carry their final colors.
+                                GL.Disable(EnableCap.Lighting);
+                                GL.Disable(EnableCap.ColorMaterial);
+                                GL.Disable(EnableCap.Fog);
+                                GL.Disable(EnableCap.Blend);
+                                GL.Enable(EnableCap.Texture2D);
+                                GL.TexEnv(TextureEnvTarget.TextureEnv, TextureEnvParameter.TextureEnvMode, (int)TextureEnvMode.Modulate);
+                            }
+                            /* Faked environmental lighting for native room display lists. */
+                            else if (settings.ApplyEnvLighting)
                             {
                                 GL.Enable(EnableCap.ColorMaterial);
                                 GL.ColorMaterial(MaterialFace.FrontAndBack, ColorMaterialParameter.Diffuse);
@@ -3163,6 +3175,8 @@ namespace SharpOcarina
                             }
                             else
                             {
+                                GL.Disable(EnableCap.Lighting);
+                                GL.Disable(EnableCap.ColorMaterial);
                                 GL.Disable(EnableCap.Fog);
                             }
 
