@@ -54,7 +54,10 @@ namespace SharpOcarina
                 // Preserve the document namespace when falling back to the legacy serializer.
                 // New scene XML uses the SharpOcarina namespace; older files may have none.
                 XmlDocument document = new XmlDocument();
-                document.Load(Filename);
+                using (FileStream stream = File.OpenRead(Filename))
+                {
+                    document.Load(stream);
+                }
                 XmlElement rootElement = document.DocumentElement;
                 XmlRootAttribute root = new XmlRootAttribute(rootElement?.LocalName ?? typeof(T).Name)
                 {
