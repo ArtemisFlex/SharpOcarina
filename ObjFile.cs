@@ -1330,6 +1330,7 @@ namespace SharpOcarina
             }
 
             AddMaterial(NewMaterial);
+            SR.Close();
         }
 
         private void AddMaterial(Material MatToAdd)
