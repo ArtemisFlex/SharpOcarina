@@ -453,6 +453,7 @@ namespace SharpOcarina
             placed.ZPos = (float)center.Z;
             room.ZActors.Add(placed);
             actorEditControl.SetActors(ref room.ZActors);
+            actorEditControl.ActorNumber = room.ZActors.Count - 1;
             actorEditControl.UpdateActorEdit();
             UpdateForm();
             Invalidate(true);
