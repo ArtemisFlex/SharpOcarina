@@ -1,0 +1,1 @@
+- Began the native authoring workspace UI pass: added a content drawer backed by live room/actor/object/group data, a live PropertyGrid details panel, and task actions wired to existing geometry, asset, scene, actor, and pathway workflows; deliberately omitted unimplemented puzzle-link/path-assignment buttons.

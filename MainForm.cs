@@ -295,6 +295,26 @@ namespace SharpOcarina
         private ProgressBar memoryRoomProgress;
         private ProgressBar memorySceneProgress;
         private ProgressBar memoryRomProgress;
+        private Panel authoringWorkspace;
+        private TreeView authoringContentTree;
+        private TextBox authoringSearchBox;
+        private PropertyGrid authoringDetailsGrid;
+        private Label authoringSelectionLabel;
+        private bool authoringTreeDirty = true;
+        private ZScene authoringTreeScene;
+        private int authoringTreeRoom = -1;
+
+        private sealed class AuthoringSelection
+        {
+            public string Kind;
+            public int RoomIndex;
+            public int ItemIndex;
+            public object Value;
+            public AuthoringSelection(string kind, int roomIndex, int itemIndex, object value)
+            {
+                Kind = kind; RoomIndex = roomIndex; ItemIndex = itemIndex; Value = value;
+            }
+        }
 
         public struct MouseStruct
         {
@@ -310,6 +330,7 @@ namespace SharpOcarina
             InitializeComponent();
             InitializeLayoutManifestIntegration();
             InitializeMemoryBudgetNotifier();
+            InitializeAuthoringWorkspace();
 
             ToolStripMenuItem roomGeometryMenu = new ToolStripMenuItem("Room Geometry Authoring");
             roomGeometryMenu.ToolTipText = "Place primitive visual and collision geometry in the selected room";
@@ -434,6 +455,7 @@ namespace SharpOcarina
             RoomGeometryBuilder.Append(room.ObjModel, CurrentScene.ColModel, spec);
             room.AuthoringPrimitives.Add(new ZScene.ZRoom.RoomAuthoringPrimitive(spec));
             room.AuthoringPrimitivesApplied = true;
+            authoringTreeDirty = true;
             // Authored geometry must use SharpOcarina's normal N64 display-list
             // rebuild path; the pregenerated path intentionally preserves old ROM bytes.
             CurrentScene.PregeneratedMesh = false;
@@ -474,6 +496,196 @@ namespace SharpOcarina
             memoryBudgetPanel.Controls.Add(memoryRomProgress);
             Controls.Add(memoryBudgetPanel);
             memoryBudgetPanel.BringToFront();
+        }
+
+        private void InitializeAuthoringWorkspace()
+        {
+            SplitContainer shell = new SplitContainer
+            {
+                Dock = DockStyle.Fill,
+                Orientation = Orientation.Vertical,
+                SplitterDistance = 245,
+                IsSplitterFixed = false
+            };
+            SplitContainer centerAndDetails = new SplitContainer
+            {
+                Dock = DockStyle.Fill,
+                Orientation = Orientation.Vertical,
+                SplitterDistance = 760,
+                IsSplitterFixed = false
+            };
+
+            Controls.Remove(glControl1);
+            Controls.Remove(tabControl1);
+            glControl1.Dock = DockStyle.Fill;
+            tabControl1.Dock = DockStyle.Fill;
+            centerAndDetails.Panel1.Controls.Add(glControl1);
+            centerAndDetails.Panel2.Controls.Add(CreateAuthoringDetailsPanel());
+            shell.Panel1.Controls.Add(CreateAuthoringDrawer());
+            shell.Panel2.Controls.Add(centerAndDetails);
+            Controls.Add(shell);
+            shell.BringToFront();
+            menuStrip1.BringToFront();
+            memoryBudgetPanel.BringToFront();
+        }
+
+        private Control CreateAuthoringDrawer()
+        {
+            TabControl drawerTabs = new TabControl { Dock = DockStyle.Fill };
+            TabPage contentPage = new TabPage("Content");
+            TabPage tasksPage = new TabPage("Tasks");
+
+            authoringSearchBox = new TextBox { Dock = DockStyle.Top, Height = 24 };
+            authoringSearchBox.TextChanged += delegate { authoringTreeDirty = true; UpdateAuthoringWorkspace(); };
+            authoringContentTree = new TreeView { Dock = DockStyle.Fill, HideSelection = false, BorderStyle = BorderStyle.FixedSingle };
+            authoringContentTree.AfterSelect += AuthoringContentTree_AfterSelect;
+            contentPage.Controls.Add(authoringContentTree);
+            contentPage.Controls.Add(authoringSearchBox);
+
+            FlowLayoutPanel tasks = new FlowLayoutPanel { Dock = DockStyle.Fill, Padding = new Padding(8), FlowDirection = FlowDirection.TopDown, WrapContents = false, AutoScroll = true };
+            tasks.Controls.Add(CreateAuthoringTaskButton("Add geometry", delegate { OpenAuthoringGeometryEditor(); }));
+            tasks.Controls.Add(CreateAuthoringTaskButton("Browse assets", delegate { OpenAuthoringAssetBrowser(); }));
+            tasks.Controls.Add(CreateAuthoringTaskButton("Scene settings", delegate { SelectExistingAuthoringTab("tabGeneral"); }));
+            tasks.Controls.Add(CreateAuthoringTaskButton("Actors and NPCs", delegate { SelectExistingAuthoringTab("tabActors"); }));
+            tasks.Controls.Add(CreateAuthoringTaskButton("Paths and patrols", delegate { SelectExistingAuthoringTab("tabPathways"); }));
+            tasksPage.Controls.Add(tasks);
+
+            drawerTabs.TabPages.Add(contentPage);
+            drawerTabs.TabPages.Add(tasksPage);
+            return drawerTabs;
+        }
+
+        private static Button CreateAuthoringTaskButton(string text, EventHandler handler)
+        {
+            Button button = new Button { Text = text, Width = 205, Height = 32, TextAlign = ContentAlignment.MiddleLeft, UseVisualStyleBackColor = true };
+            button.Click += handler;
+            return button;
+        }
+
+        private Control CreateAuthoringDetailsPanel()
+        {
+            Panel panel = new Panel { Dock = DockStyle.Fill, Padding = new Padding(6) };
+            authoringSelectionLabel = new Label { Text = "Nothing selected", Dock = DockStyle.Top, Height = 28, Font = new Font(Font, FontStyle.Bold) };
+            authoringDetailsGrid = new PropertyGrid { Dock = DockStyle.Fill, ToolbarVisible = false, HelpVisible = true, PropertySort = PropertySort.Categorized };
+            authoringDetailsGrid.PropertyValueChanged += delegate { authoringTreeDirty = true; UpdateForm(); };
+            panel.Controls.Add(authoringDetailsGrid);
+            panel.Controls.Add(authoringSelectionLabel);
+            return panel;
+        }
+
+        private void OpenAuthoringGeometryEditor()
+        {
+            if (CurrentScene == null || RoomList.SelectedIndex < 0) return;
+            using (RoomGeometryEditor editor = new RoomGeometryEditor(this)) editor.ShowDialog(this);
+        }
+
+        private void OpenAuthoringAssetBrowser()
+        {
+            if (CurrentScene == null || RoomList.SelectedIndex < 0) return;
+            using (RoomAssetBrowser browser = new RoomAssetBrowser(this, CurrentScene.Rooms[RoomList.SelectedIndex])) browser.ShowDialog(this);
+        }
+
+        private void SelectExistingAuthoringTab(string tabName)
+        {
+            if (tabControl1 != null && tabControl1.TabPages.ContainsKey(tabName))
+                tabControl1.SelectedTab = tabControl1.TabPages[tabName];
+        }
+
+        private void AuthoringContentTree_AfterSelect(object sender, TreeViewEventArgs e)
+        {
+            AuthoringSelection selection = e.Node.Tag as AuthoringSelection;
+            if (selection == null) return;
+            if (selection.RoomIndex >= 0 && RoomList.SelectedIndex != selection.RoomIndex)
+                RoomList.SelectedIndex = selection.RoomIndex;
+
+            if (selection.Kind == "Actor")
+            {
+                actorpick = _Actor_;
+                actorEditControl.SetActors(ref CurrentScene.Rooms[selection.RoomIndex].ZActors);
+                actorEditControl.ActorNumber = selection.ItemIndex;
+                actorEditControl.UpdateActorEdit();
+            }
+            else if (selection.Kind == "Object")
+            {
+                SelectRoomObject(selection.ItemIndex);
+            }
+            else if (selection.Kind == "Group")
+            {
+                int groupIndex = CurrentScene.Rooms[selection.RoomIndex].ObjModel.Groups.IndexOf((ObjFile.Group)selection.Value);
+                if (groupIndex >= 0) GroupList.SelectedIndex = groupIndex;
+            }
+
+            authoringDetailsGrid.SelectedObject = selection.Value;
+            authoringSelectionLabel.Text = selection.Kind + "  |  Room " + (selection.RoomIndex < 0 ? "-" : selection.RoomIndex.ToString());
+        }
+
+        private void UpdateAuthoringWorkspace()
+        {
+            if (authoringContentTree == null) return;
+            if (CurrentScene == null)
+            {
+                authoringContentTree.Nodes.Clear();
+                authoringDetailsGrid.SelectedObject = null;
+                authoringSelectionLabel.Text = "Open a scene to begin authoring";
+                return;
+            }
+
+            if (authoringTreeDirty || authoringTreeScene != CurrentScene || authoringTreeRoom != RoomList.SelectedIndex)
+            {
+                authoringContentTree.BeginUpdate();
+                authoringContentTree.Nodes.Clear();
+                string filter = (authoringSearchBox == null ? "" : authoringSearchBox.Text).Trim().ToLowerInvariant();
+                TreeNode sceneNode = new TreeNode(string.IsNullOrEmpty(CurrentScene.Name) ? "Scene" : CurrentScene.Name);
+                for (int roomIndex = 0; roomIndex < CurrentScene.Rooms.Count; roomIndex++)
+                {
+                    ZScene.ZRoom room = CurrentScene.Rooms[roomIndex];
+                    TreeNode roomNode = new TreeNode("Room " + roomIndex + (string.IsNullOrEmpty(room.ModelShortFilename) ? "" : "  " + room.ModelShortFilename));
+                    roomNode.Tag = new AuthoringSelection("Room", roomIndex, -1, room);
+                    AddAuthoringRoomNodes(roomNode, room, roomIndex, filter);
+                    if (roomNode.Nodes.Count > 0 || string.IsNullOrEmpty(filter) || roomNode.Text.ToLowerInvariant().Contains(filter))
+                        sceneNode.Nodes.Add(roomNode);
+                }
+                authoringContentTree.Nodes.Add(sceneNode);
+                sceneNode.Expand();
+                authoringContentTree.EndUpdate();
+                authoringTreeScene = CurrentScene;
+                authoringTreeRoom = RoomList.SelectedIndex;
+                authoringTreeDirty = false;
+            }
+        }
+
+        private static void AddAuthoringRoomNodes(TreeNode roomNode, ZScene.ZRoom room, int roomIndex, string filter)
+        {
+            TreeNode actors = new TreeNode("Actors / NPCs");
+            for (int i = 0; i < room.ZActors.Count; i++)
+            {
+                ZActor actor = room.ZActors[i];
+                string text = "Actor " + actor.Number.ToString("X4") + "  Var " + actor.Variable.ToString("X4");
+                if (string.IsNullOrEmpty(filter) || text.ToLowerInvariant().Contains(filter))
+                {
+                    TreeNode node = new TreeNode(text) { Tag = new AuthoringSelection("Actor", roomIndex, i, actor) };
+                    actors.Nodes.Add(node);
+                }
+            }
+            if (actors.Nodes.Count > 0 || string.IsNullOrEmpty(filter)) roomNode.Nodes.Add(actors);
+
+            TreeNode objects = new TreeNode("Objects");
+            for (int i = 0; i < room.ZObjects.Count; i++)
+            {
+                string text = "Object " + room.ZObjects[i].Value.ToString("X4");
+                if (string.IsNullOrEmpty(filter) || text.ToLowerInvariant().Contains(filter))
+                    objects.Nodes.Add(new TreeNode(text) { Tag = new AuthoringSelection("Object", roomIndex, i, room.ZObjects[i]) });
+            }
+            if (objects.Nodes.Count > 0 || string.IsNullOrEmpty(filter)) roomNode.Nodes.Add(objects);
+
+            if (room.ObjModel != null)
+            {
+                TreeNode geometry = new TreeNode("Geometry / Materials");
+                foreach (ObjFile.Group group in room.ObjModel.Groups)
+                    if (string.IsNullOrEmpty(filter) || group.Name.ToLowerInvariant().Contains(filter))
+                        geometry.Nodes.Add(new TreeNode(group.Name) { Tag = new AuthoringSelection("Group", roomIndex, geometry.Nodes.Count, group) });
+                if (geometry.Nodes.Count > 0 || string.IsNullOrEmpty(filter)) roomNode.Nodes.Add(geometry);
+            }
         }
 
         private static Label CreateBudgetLabel(int y)
@@ -539,6 +751,7 @@ namespace SharpOcarina
             placed.YPos = (float)center.Y;
             placed.ZPos = (float)center.Z;
             room.ZActors.Add(placed);
+            authoringTreeDirty = true;
             actorEditControl.SetActors(ref room.ZActors);
             actorEditControl.ActorNumber = room.ZActors.Count - 1;
             actorEditControl.UpdateActorEdit();
@@ -553,6 +766,7 @@ namespace SharpOcarina
 
             ZScene.ZRoom room = CurrentScene.Rooms[RoomList.SelectedIndex];
             room.ZObjects.Add(new ZScene.ZUShort(objectId));
+            authoringTreeDirty = true;
             UpdateObjectEdit();
             SelectRoomObject(room.ZObjects.Count - 1);
             UpdateForm();
@@ -5099,6 +5313,7 @@ namespace SharpOcarina
         {
 
             UpdateMemoryBudgetNotifier();
+            UpdateAuthoringWorkspace();
 
             if (CurrentScene != null)
             {
