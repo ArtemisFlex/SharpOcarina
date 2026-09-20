@@ -272,6 +272,28 @@ namespace SharpOcarina.SayakaGL
 
         }
 
+        public struct CapturedTriangle
+        {
+            public Vector3d[] Positions;
+            public Vector2d[] TexCoords;
+            public Vector3d[] Normals;
+        }
+
+        public static bool CaptureGeometry = false;
+        public static List<CapturedTriangle> CapturedTriangles = new List<CapturedTriangle>();
+
+        public static void BeginGeometryCapture()
+        {
+            CapturedTriangles.Clear();
+            CaptureGeometry = true;
+        }
+
+        public static List<CapturedTriangle> EndGeometryCapture()
+        {
+            CaptureGeometry = false;
+            return new List<CapturedTriangle>(CapturedTriangles);
+        }
+
         public struct UnpackedCombinerStruct
         {
             public byte[] cA;
@@ -896,6 +918,25 @@ namespace SharpOcarina.SayakaGL
 
         public static void RenderTriangles(int[] Indices, ref VertexStruct[] Vertices)
         {
+            if (CaptureGeometry && Vertices != null)
+            {
+                for (int i = 0; i + 2 < Indices.Length; i += 3)
+                {
+                    int a = Indices[i];
+                    int b = Indices[i + 1];
+                    int c = Indices[i + 2];
+                    if (a < 0 || b < 0 || c < 0 || a >= Vertices.Length || b >= Vertices.Length || c >= Vertices.Length)
+                        continue;
+
+                    CapturedTriangles.Add(new CapturedTriangle
+                    {
+                        Positions = new[] { Vertices[a].Position, Vertices[b].Position, Vertices[c].Position },
+                        TexCoords = new[] { Vertices[a].TexCoord, Vertices[b].TexCoord, Vertices[c].TexCoord },
+                        Normals = new[] { Vertices[a].Normals, Vertices[b].Normals, Vertices[c].Normals }
+                    });
+                }
+            }
+
             GL.Begin(BeginMode.Triangles);
 
             foreach (int ThisIndex in Indices)

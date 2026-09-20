@@ -8785,6 +8785,17 @@ namespace SharpOcarina
             {
                 CurrentScene.ConvertPreview(settings.ConsecutiveRoomInject, settings.ForceRGBATextures);
             }
+
+            if (!CurrentScene.PregeneratedMesh)
+            {
+                foreach (Control Ctrl in tabRooms.Controls)
+                    Ctrl.Enabled = true;
+                RoomList.Enabled = true;
+                AddpolygonButton.Enabled = true;
+                DeletepolygonButton.Enabled = true;
+                ReloadRoomButton.Text = "Reload";
+                UpdateForm();
+            }
         }
 
         private void SetTrueGroupsToGroupSettings(int i)

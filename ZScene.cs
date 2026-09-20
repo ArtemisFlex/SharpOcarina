@@ -1974,6 +1974,46 @@ namespace SharpOcarina
             }
         }
 
+        private string WriteCapturedRoomObj(int roomIndex, List<SayakaGL.UcodeSimulator.CapturedTriangle> triangles)
+        {
+            string basePath = string.IsNullOrEmpty(BasePath) ? AppDomain.CurrentDomain.BaseDirectory : BasePath;
+            string importPath = Path.Combine(basePath, "Import");
+            Directory.CreateDirectory(importPath);
+            string objPath = Path.Combine(importPath, "Room_" + roomIndex + "_editable.obj");
+            string mtlName = Path.GetFileNameWithoutExtension(objPath) + ".mtl";
+
+            using (StreamWriter writer = new StreamWriter(objPath, false, Encoding.UTF8))
+            {
+                writer.WriteLine("# Decoded from OoT N64 display lists by SharpOcarina");
+                writer.WriteLine("mtllib " + mtlName);
+
+                foreach (SayakaGL.UcodeSimulator.CapturedTriangle triangle in triangles)
+                    foreach (Vector3d position in triangle.Positions)
+                        writer.WriteLine(string.Format(CultureInfo.InvariantCulture, "v {0} {1} {2}", position.X, position.Y, position.Z));
+
+                foreach (SayakaGL.UcodeSimulator.CapturedTriangle triangle in triangles)
+                    foreach (Vector2d texCoord in triangle.TexCoords)
+                        writer.WriteLine(string.Format(CultureInfo.InvariantCulture, "vt {0} {1}", texCoord.X, texCoord.Y));
+
+                foreach (SayakaGL.UcodeSimulator.CapturedTriangle triangle in triangles)
+                    foreach (Vector3d normal in triangle.Normals)
+                        writer.WriteLine(string.Format(CultureInfo.InvariantCulture, "vn {0} {1} {2}", normal.X, normal.Y, normal.Z));
+
+                writer.WriteLine("g Room" + roomIndex);
+                writer.WriteLine("usemtl None");
+                for (int i = 0; i < triangles.Count; i++)
+                {
+                    int vertex = i * 3 + 1;
+                    writer.WriteLine("f " + vertex + "/" + vertex + "/" + vertex + " "
+                        + (vertex + 1) + "/" + (vertex + 1) + "/" + (vertex + 1) + " "
+                        + (vertex + 2) + "/" + (vertex + 2) + "/" + (vertex + 2));
+                }
+            }
+
+            File.WriteAllText(Path.Combine(importPath, mtlName), "newmtl None\nKd 0.8 0.8 0.8\nKa 0.2 0.2 0.2\n");
+            return objPath;
+        }
+
         public void ConvertPreview(bool ConsecutiveRoomInject, bool ForceRGBATextures)
         {
 
@@ -2034,6 +2074,7 @@ namespace SharpOcarina
 
 
                 // Get the Display Lists offsets back from the mesh header and read each DList
+                SayakaGL.UcodeSimulator.BeginGeometryCapture();
 
                 foreach (UInt32 DL in DLOffsets)
                 {
@@ -2042,8 +2083,28 @@ namespace SharpOcarina
                 // Finally parse all the DLists
                 SayakaGL.UcodeSimulator.ParseAllDLs(ref _Rooms[i].N64DLists);
 
+                if (PregeneratedMesh)
+                {
+                    List<SayakaGL.UcodeSimulator.CapturedTriangle> triangles = SayakaGL.UcodeSimulator.EndGeometryCapture();
+                    if (triangles.Count > 0)
+                    {
+                        string modelPath = WriteCapturedRoomObj(i, triangles);
+                        _Rooms[i].ModelFilename = modelPath;
+                        _Rooms[i].ModelShortFilename = Path.GetFileNameWithoutExtension(modelPath);
+                        _Rooms[i].ObjModel = new ObjFile(modelPath);
+                        _Rooms[i].TrueGroups = _Rooms[i].ObjModel.Groups;
+                    }
+                }
+                else
+                {
+                    SayakaGL.UcodeSimulator.EndGeometryCapture();
+                }
+
 
             }
+
+            if (PregeneratedMesh && _Rooms.Count > 0 && _Rooms.All(room => room.ObjModel != null && room.ObjModel.Vertices.Count > 0))
+                PregeneratedMesh = false;
 
             string[] skyboxfiles = { "skybox01.zobj", "skybox01cloudy.zobj", "skybox05.zobj", "skybox01MM.zobj" };
             uint[] skyboxoffsets = { 0x06017400, 0x06017020, 0x0601B380, 0x06010B40 };
