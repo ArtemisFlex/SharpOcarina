@@ -303,6 +303,8 @@ namespace SharpOcarina
         private bool authoringTreeDirty = true;
         private ZScene authoringTreeScene;
         private int authoringTreeRoom = -1;
+        private SplitContainer authoringShellSplit;
+        private SplitContainer authoringCenterDetailsSplit;
 
         private sealed class AuthoringSelection
         {
@@ -500,18 +502,18 @@ namespace SharpOcarina
 
         private void InitializeAuthoringWorkspace()
         {
-            SplitContainer shell = new SplitContainer
+            authoringShellSplit = new SplitContainer
             {
                 Dock = DockStyle.Fill,
                 Orientation = Orientation.Vertical,
-                SplitterDistance = 245,
+                SplitterDistance = 220,
                 IsSplitterFixed = false
             };
-            SplitContainer centerAndDetails = new SplitContainer
+            authoringCenterDetailsSplit = new SplitContainer
             {
                 Dock = DockStyle.Fill,
                 Orientation = Orientation.Vertical,
-                SplitterDistance = 760,
+                SplitterDistance = 600,
                 IsSplitterFixed = false
             };
 
@@ -519,14 +521,36 @@ namespace SharpOcarina
             Controls.Remove(tabControl1);
             glControl1.Dock = DockStyle.Fill;
             tabControl1.Dock = DockStyle.Fill;
-            centerAndDetails.Panel1.Controls.Add(glControl1);
-            centerAndDetails.Panel2.Controls.Add(CreateAuthoringDetailsPanel());
-            shell.Panel1.Controls.Add(CreateAuthoringDrawer());
-            shell.Panel2.Controls.Add(centerAndDetails);
-            Controls.Add(shell);
-            shell.BringToFront();
+            Panel viewportHost = new Panel { Dock = DockStyle.Fill, Padding = new Padding(0, 28, 0, 0) };
+            FlowLayoutPanel viewportToolbar = new FlowLayoutPanel
+            {
+                Dock = DockStyle.Top,
+                Height = 28,
+                FlowDirection = FlowDirection.LeftToRight,
+                WrapContents = false,
+                Padding = new Padding(2)
+            };
+            Button contentToggle = CreateViewportToggle("Content", delegate { authoringShellSplit.Panel1Collapsed = !authoringShellSplit.Panel1Collapsed; });
+            Button detailsToggle = CreateViewportToggle("Details", delegate { authoringCenterDetailsSplit.Panel2Collapsed = !authoringCenterDetailsSplit.Panel2Collapsed; });
+            viewportToolbar.Controls.Add(contentToggle);
+            viewportToolbar.Controls.Add(detailsToggle);
+            viewportHost.Controls.Add(glControl1);
+            viewportHost.Controls.Add(viewportToolbar);
+            authoringCenterDetailsSplit.Panel1.Controls.Add(viewportHost);
+            authoringCenterDetailsSplit.Panel2.Controls.Add(CreateAuthoringDetailsPanel());
+            authoringShellSplit.Panel1.Controls.Add(CreateAuthoringDrawer());
+            authoringShellSplit.Panel2.Controls.Add(authoringCenterDetailsSplit);
+            Controls.Add(authoringShellSplit);
+            authoringShellSplit.BringToFront();
             menuStrip1.BringToFront();
             memoryBudgetPanel.BringToFront();
+        }
+
+        private static Button CreateViewportToggle(string text, EventHandler handler)
+        {
+            Button button = new Button { Text = text, AutoSize = true, Height = 24, FlatStyle = FlatStyle.System };
+            button.Click += handler;
+            return button;
         }
 
         private Control CreateAuthoringDrawer()
