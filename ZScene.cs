@@ -388,6 +388,24 @@ namespace SharpOcarina
         [XmlIgnore]
         private List<byte> SceneData;
 
+        [XmlIgnore]
+        public int GeneratedSceneDataLength
+        {
+            get { return SceneData == null ? 0 : SceneData.Count; }
+        }
+
+        [XmlIgnore]
+        public int OriginalScenePackageLength
+        {
+            get
+            {
+                int length = OriginalSceneData == null ? 0 : OriginalSceneData.Count;
+                foreach (ZRoom room in _Rooms)
+                    if (room.OriginalRoomData != null) length += room.OriginalRoomData.Count;
+                return length;
+            }
+        }
+
         public List<byte> OriginalSceneData;
 
         [XmlIgnore]

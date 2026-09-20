@@ -288,6 +288,14 @@ namespace SharpOcarina
         public static List<ZScene.ZObjRender> zobj_cache = new List<ZScene.ZObjRender>();
         public static List<List<SayakaGL.UcodeSimulator.DisplayListStruct>> skyboxdlists = new List<List<UcodeSimulator.DisplayListStruct>>();
 
+        private Panel memoryBudgetPanel;
+        private Label memoryRoomLabel;
+        private Label memorySceneLabel;
+        private Label memoryRomLabel;
+        private ProgressBar memoryRoomProgress;
+        private ProgressBar memorySceneProgress;
+        private ProgressBar memoryRomProgress;
+
         public struct MouseStruct
         {
             public Vector2d Center, Move;
@@ -301,6 +309,7 @@ namespace SharpOcarina
             Text = Program.ApplicationTitle;
             InitializeComponent();
             InitializeLayoutManifestIntegration();
+            InitializeMemoryBudgetNotifier();
 
             ToolStripMenuItem roomGeometryMenu = new ToolStripMenuItem("Room Geometry Authoring");
             roomGeometryMenu.ToolTipText = "Place primitive visual and collision geometry in the selected room";
@@ -438,6 +447,84 @@ namespace SharpOcarina
             GroupList.DataSource = null;
             GroupList.DataSource = room.TrueGroups;
             Invalidate(true);
+        }
+
+        private void InitializeMemoryBudgetNotifier()
+        {
+            memoryBudgetPanel = new Panel
+            {
+                Anchor = AnchorStyles.Top | AnchorStyles.Right,
+                BackColor = Color.FromArgb(245, 245, 245),
+                BorderStyle = BorderStyle.FixedSingle,
+                Location = new Point(ClientSize.Width - 325, 27),
+                Size = new Size(315, 88)
+            };
+
+            memoryRoomLabel = CreateBudgetLabel(4);
+            memorySceneLabel = CreateBudgetLabel(30);
+            memoryRomLabel = CreateBudgetLabel(56);
+            memoryRoomProgress = CreateBudgetProgress(4);
+            memorySceneProgress = CreateBudgetProgress(30);
+            memoryRomProgress = CreateBudgetProgress(56);
+            memoryBudgetPanel.Controls.Add(memoryRoomLabel);
+            memoryBudgetPanel.Controls.Add(memorySceneLabel);
+            memoryBudgetPanel.Controls.Add(memoryRomLabel);
+            memoryBudgetPanel.Controls.Add(memoryRoomProgress);
+            memoryBudgetPanel.Controls.Add(memorySceneProgress);
+            memoryBudgetPanel.Controls.Add(memoryRomProgress);
+            Controls.Add(memoryBudgetPanel);
+            memoryBudgetPanel.BringToFront();
+        }
+
+        private static Label CreateBudgetLabel(int y)
+        {
+            return new Label { AutoSize = false, Location = new Point(6, y), Size = new Size(285, 18), Text = "Budget: n/a" };
+        }
+
+        private static ProgressBar CreateBudgetProgress(int y)
+        {
+            return new ProgressBar { Location = new Point(6, y + 17), Size = new Size(298, 8), Maximum = 1000, Style = ProgressBarStyle.Continuous };
+        }
+
+        private void UpdateMemoryBudgetNotifier()
+        {
+            if (memoryBudgetPanel == null) return;
+
+            ZScene.ZRoom room = null;
+            if (CurrentScene != null && RoomList != null && RoomList.SelectedIndex >= 0 && RoomList.SelectedIndex < CurrentScene.Rooms.Count)
+                room = CurrentScene.Rooms[RoomList.SelectedIndex];
+
+            int roomUsed = room == null ? 0 : (room.FullDataLength > 0 ? room.FullDataLength : (room.RoomData == null ? 0 : room.RoomData.Count));
+            int roomBudget = room == null || room.OriginalRoomData == null ? 0 : room.OriginalRoomData.Count;
+            SetBudget(memoryRoomLabel, memoryRoomProgress, "Room", roomUsed, roomBudget);
+
+            int sceneUsed = CurrentScene == null ? 0 : CurrentScene.GeneratedSceneDataLength;
+            int sceneBudget = CurrentScene == null ? 0 : CurrentScene.OriginalScenePackageLength;
+            SetBudget(memorySceneLabel, memorySceneProgress, "Scene package", sceneUsed, sceneBudget);
+
+            long romUsed = 0;
+            bool romLoaded = !string.IsNullOrEmpty(GlobalROM) && File.Exists(GlobalROM);
+            if (romLoaded) romUsed = new FileInfo(GlobalROM).Length;
+            SetBudget(memoryRomLabel, memoryRomProgress, "ROM / 64 MiB N64 address space", romLoaded ? romUsed : 0, 64L * 1024L * 1024L, romLoaded);
+        }
+
+        private static void SetBudget(Label label, ProgressBar progress, string name, long used, long budget, bool available = true)
+        {
+            if (!available || used == 0 && budget == 0)
+            {
+                label.Text = name + ": n/a";
+                label.ForeColor = SystemColors.ControlText;
+                progress.Value = 0;
+                return;
+            }
+
+            long remaining = budget > 0 ? budget - used : 0;
+            label.Text = budget > 0
+                ? string.Format("{0}: {1:N0} / {2:N0} bytes ({3:N0} left)", name, used, budget, remaining)
+                : string.Format("{0}: {1:N0} bytes", name, used);
+            label.ForeColor = budget > 0 && remaining < 0 ? Color.DarkRed : (budget > 0 && remaining < budget / 10 ? Color.DarkOrange : SystemColors.ControlText);
+            int value = budget > 0 ? (int)Math.Min(1000, Math.Max(0, used * 1000 / budget)) : 0;
+            progress.Value = value;
         }
 
         public void PlaceActorFromAsset(ZActor source)
@@ -5010,6 +5097,8 @@ namespace SharpOcarina
 
         private void UpdateForm()
         {
+
+            UpdateMemoryBudgetNotifier();
 
             if (CurrentScene != null)
             {
