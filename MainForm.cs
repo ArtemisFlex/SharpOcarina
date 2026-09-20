@@ -306,6 +306,11 @@ namespace SharpOcarina
         private Button authoringDeletePathPointButton;
         private Button authoringOpenLegacyButton;
         private Button authoringFrameButton;
+        private Button authoringApplyPositionButton;
+        private NumericUpDown authoringPositionX;
+        private NumericUpDown authoringPositionY;
+        private NumericUpDown authoringPositionZ;
+        private bool updatingAuthoringPosition;
         private AuthoringSelection authoringSelection;
         private bool authoringTreeDirty = true;
         private ZScene authoringTreeScene;
@@ -731,6 +736,32 @@ namespace SharpOcarina
                 UseVisualStyleBackColor = true
             };
             authoringFrameButton.Click += delegate { FrameAuthoringSelection(); };
+            authoringApplyPositionButton = new Button
+            {
+                Text = "Apply OoT position",
+                Dock = DockStyle.Top,
+                Height = 28,
+                Enabled = false,
+                UseVisualStyleBackColor = true
+            };
+            authoringApplyPositionButton.Click += delegate { ApplyAuthoringPosition(); };
+
+            FlowLayoutPanel positionRow = new FlowLayoutPanel
+            {
+                Dock = DockStyle.Top,
+                Height = 32,
+                WrapContents = false,
+                Padding = new Padding(0, 3, 0, 0)
+            };
+            authoringPositionX = CreateAuthoringPositionBox();
+            authoringPositionY = CreateAuthoringPositionBox();
+            authoringPositionZ = CreateAuthoringPositionBox();
+            positionRow.Controls.Add(new Label { Text = "X", AutoSize = true, Padding = new Padding(0, 5, 2, 0) });
+            positionRow.Controls.Add(authoringPositionX);
+            positionRow.Controls.Add(new Label { Text = "Y", AutoSize = true, Padding = new Padding(6, 5, 2, 0) });
+            positionRow.Controls.Add(authoringPositionY);
+            positionRow.Controls.Add(new Label { Text = "Z", AutoSize = true, Padding = new Padding(6, 5, 2, 0) });
+            positionRow.Controls.Add(authoringPositionZ);
             authoringDetailsGrid = new PropertyGrid { Dock = DockStyle.Fill, ToolbarVisible = false, HelpVisible = true, PropertySort = PropertySort.Categorized };
             authoringDetailsGrid.PropertyValueChanged += delegate { authoringTreeDirty = true; UpdateForm(); };
             panel.Controls.Add(authoringDetailsGrid);
@@ -740,8 +771,24 @@ namespace SharpOcarina
             panel.Controls.Add(authoringAssignPathButton);
             panel.Controls.Add(authoringOpenLegacyButton);
             panel.Controls.Add(authoringFrameButton);
+            panel.Controls.Add(authoringApplyPositionButton);
+            panel.Controls.Add(positionRow);
             panel.Controls.Add(authoringSelectionLabel);
             return panel;
+        }
+
+        private static NumericUpDown CreateAuthoringPositionBox()
+        {
+            return new NumericUpDown
+            {
+                Width = 68,
+                Height = 24,
+                DecimalPlaces = 2,
+                Increment = 0.25m,
+                Minimum = -32767,
+                Maximum = 32767,
+                ThousandsSeparator = false
+            };
         }
 
         private void OpenAuthoringGeometryEditor()
@@ -893,6 +940,74 @@ namespace SharpOcarina
             Camera.Rot = Vector3d.Zero;
             Camera.Pos = ConvertToCameraPosition(position);
             Camera.Pos.Z -= 5.0;
+            glControl1.Invalidate();
+        }
+
+        private bool CanEditAuthoringPosition()
+        {
+            if (CurrentScene == null || authoringSelection == null) return false;
+            if (authoringSelection.Kind == "Actor" || authoringSelection.Kind == "PathPoint")
+                return TryGetAuthoringSelectionPosition(out _);
+            return authoringSelection.Kind == "Transition" &&
+                authoringSelection.ItemIndex >= 0 && authoringSelection.ItemIndex < CurrentScene.Transitions.Count;
+        }
+
+        private void UpdateAuthoringPositionControls()
+        {
+            if (authoringApplyPositionButton == null) return;
+            bool canEdit = CanEditAuthoringPosition();
+            authoringApplyPositionButton.Enabled = canEdit;
+            authoringPositionX.Enabled = canEdit;
+            authoringPositionY.Enabled = canEdit;
+            authoringPositionZ.Enabled = canEdit;
+            if (!canEdit) return;
+
+            Vector3d position;
+            if (!TryGetAuthoringSelectionPosition(out position)) return;
+            updatingAuthoringPosition = true;
+            try
+            {
+                authoringPositionX.Value = (decimal)Clamp(position.X, -32767.0, 32767.0);
+                authoringPositionY.Value = (decimal)Clamp(position.Y, -32767.0, 32767.0);
+                authoringPositionZ.Value = (decimal)Clamp(position.Z, -32767.0, 32767.0);
+            }
+            finally
+            {
+                updatingAuthoringPosition = false;
+            }
+        }
+
+        private void ApplyAuthoringPosition()
+        {
+            if (updatingAuthoringPosition || !CanEditAuthoringPosition()) return;
+
+            float x = (float)authoringPositionX.Value;
+            float y = (float)authoringPositionY.Value;
+            float z = (float)authoringPositionZ.Value;
+            if (authoringSelection.Kind == "Actor")
+            {
+                StoreUndo(_Actor_, authoringSelection.RoomIndex);
+                ZActor actor = CurrentScene.Rooms[authoringSelection.RoomIndex].ZActors[authoringSelection.ItemIndex];
+                actor.XPos = (short)x;
+                actor.YPos = (short)y;
+                actor.ZPos = (short)z;
+            }
+            else if (authoringSelection.Kind == "Transition")
+            {
+                StoreUndo(_Transition_);
+                ZActor transition = CurrentScene.Transitions[authoringSelection.ItemIndex];
+                transition.XPos = (short)x;
+                transition.YPos = (short)y;
+                transition.ZPos = (short)z;
+            }
+            else
+            {
+                StoreUndo(_Pathway_);
+                CurrentScene.Pathways[authoringSelection.ItemIndex].Points[authoringSelection.PointIndex] = new Vector3(x, y, z);
+            }
+
+            authoringTreeDirty = true;
+            UpdateForm();
             glControl1.Invalidate();
         }
 
@@ -1052,6 +1167,7 @@ namespace SharpOcarina
             authoringDeletePathPointButton.Visible = pointSelected;
             authoringOpenLegacyButton.Visible = CanOpenAuthoringSelectionInLegacyEditor();
             authoringFrameButton.Enabled = TryGetAuthoringSelectionPosition(out _);
+            UpdateAuthoringPositionControls();
         }
 
         private void AssignAuthoringActorPath()
