@@ -2491,10 +2491,14 @@ namespace SharpOcarina
                         {
                             GL.PushMatrix();
                             GL.Scale(CurrentScene.Scale, CurrentScene.Scale, CurrentScene.Scale);
+                            GL.Disable(EnableCap.Lighting);
+                            GL.Disable(EnableCap.ColorMaterial);
+                            GL.Disable(EnableCap.Fog);
+                            GL.Disable(EnableCap.Blend);
                             GL.Enable(EnableCap.Texture2D);
+                            GL.Color4(Color.White);
                             for (int i = 0; i < Room.TrueGroups.Count; i++)
                             {
-                                GL.Color4(Color.FromArgb((int)Room.TrueGroups[i].TintAlpha));
                                 Room.ObjModel.Render(Room.TrueGroups[i]);
                             }
                             GL.PopMatrix();
