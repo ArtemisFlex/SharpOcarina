@@ -2000,18 +2000,56 @@ namespace SharpOcarina
                         writer.WriteLine(string.Format(CultureInfo.InvariantCulture, "vn {0} {1} {2}", normal.X, normal.Y, normal.Z));
 
                 writer.WriteLine("g Room" + roomIndex);
-                writer.WriteLine("usemtl None");
                 for (int i = 0; i < triangles.Count; i++)
                 {
                     int vertex = i * 3 + 1;
+                    writer.WriteLine("usemtl Mat_" + GetCapturedMaterialName(triangles[i]));
                     writer.WriteLine("f " + vertex + "/" + vertex + "/" + vertex + " "
                         + (vertex + 1) + "/" + (vertex + 1) + "/" + (vertex + 1) + " "
                         + (vertex + 2) + "/" + (vertex + 2) + "/" + (vertex + 2));
                 }
             }
 
-            File.WriteAllText(Path.Combine(importPath, mtlName), "newmtl None\nKd 0.8 0.8 0.8\nKa 0.2 0.2 0.2\n");
+            Dictionary<string, OpenTK.Graphics.Color4> materials = new Dictionary<string, OpenTK.Graphics.Color4>();
+            foreach (SayakaGL.UcodeSimulator.CapturedTriangle triangle in triangles)
+            {
+                string name = GetCapturedMaterialName(triangle);
+                if (!materials.ContainsKey(name)) materials.Add(name, GetCapturedMaterialColor(triangle));
+            }
+
+            using (StreamWriter materialWriter = new StreamWriter(Path.Combine(importPath, mtlName), false, Encoding.UTF8))
+            {
+                foreach (KeyValuePair<string, OpenTK.Graphics.Color4> material in materials)
+                {
+                    materialWriter.WriteLine("newmtl Mat_" + material.Key);
+                    materialWriter.WriteLine(string.Format(CultureInfo.InvariantCulture, "Kd {0} {1} {2}",
+                        material.Value.R, material.Value.G, material.Value.B));
+                    materialWriter.WriteLine(string.Format(CultureInfo.InvariantCulture, "d {0}", material.Value.A));
+                    materialWriter.WriteLine("illum 1");
+                }
+            }
             return objPath;
+        }
+
+        private static OpenTK.Graphics.Color4 GetCapturedMaterialColor(SayakaGL.UcodeSimulator.CapturedTriangle triangle)
+        {
+            if (triangle.Colors == null || triangle.Colors.Length == 0) return new OpenTK.Graphics.Color4(0.8f, 0.8f, 0.8f, 1.0f);
+            float r = 0, g = 0, b = 0, a = 0;
+            foreach (OpenTK.Graphics.Color4 color in triangle.Colors)
+            {
+                r += color.R;
+                g += color.G;
+                b += color.B;
+                a += color.A;
+            }
+            float count = triangle.Colors.Length;
+            return new OpenTK.Graphics.Color4(r / count, g / count, b / count, a / count);
+        }
+
+        private static string GetCapturedMaterialName(SayakaGL.UcodeSimulator.CapturedTriangle triangle)
+        {
+            OpenTK.Graphics.Color4 color = GetCapturedMaterialColor(triangle);
+            return ((int)(color.R * 255.0f)).ToString("X2") + ((int)(color.G * 255.0f)).ToString("X2") + ((int)(color.B * 255.0f)).ToString("X2") + ((int)(color.A * 255.0f)).ToString("X2");
         }
 
         public void ConvertPreview(bool ConsecutiveRoomInject, bool ForceRGBATextures)

@@ -277,6 +277,7 @@ namespace SharpOcarina.SayakaGL
             public Vector3d[] Positions;
             public Vector2d[] TexCoords;
             public Vector3d[] Normals;
+            public Color4[] Colors;
         }
 
         public static bool CaptureGeometry = false;
@@ -932,7 +933,8 @@ namespace SharpOcarina.SayakaGL
                     {
                         Positions = new[] { Vertices[a].Position, Vertices[b].Position, Vertices[c].Position },
                         TexCoords = new[] { Vertices[a].TexCoord, Vertices[b].TexCoord, Vertices[c].TexCoord },
-                        Normals = new[] { Vertices[a].Normals, Vertices[b].Normals, Vertices[c].Normals }
+                        Normals = new[] { Vertices[a].Normals, Vertices[b].Normals, Vertices[c].Normals },
+                        Colors = new[] { Vertices[a].Colors, Vertices[b].Colors, Vertices[c].Colors }
                     });
                 }
             }
