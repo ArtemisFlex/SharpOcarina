@@ -1981,6 +1981,14 @@ namespace SharpOcarina
             Directory.CreateDirectory(importPath);
             string objPath = Path.Combine(importPath, "Room_" + roomIndex + "_editable.obj");
             string mtlName = Path.GetFileNameWithoutExtension(objPath) + ".mtl";
+            string texturePath = Path.Combine(importPath, "RoomTextures");
+            Directory.CreateDirectory(texturePath);
+
+            foreach (SayakaGL.UcodeSimulator.CapturedTriangle triangle in triangles)
+            {
+                if (!string.IsNullOrEmpty(triangle.TextureKey) && SayakaGL.UcodeSimulator.CapturedTextures.ContainsKey(triangle.TextureKey))
+                    WriteCapturedTexture(texturePath, triangle.TextureKey, SayakaGL.UcodeSimulator.CapturedTextures[triangle.TextureKey]);
+            }
 
             using (StreamWriter writer = new StreamWriter(objPath, false, Encoding.UTF8))
             {
@@ -2011,10 +2019,14 @@ namespace SharpOcarina
             }
 
             Dictionary<string, OpenTK.Graphics.Color4> materials = new Dictionary<string, OpenTK.Graphics.Color4>();
+            Dictionary<string, string> materialTextures = new Dictionary<string, string>();
             foreach (SayakaGL.UcodeSimulator.CapturedTriangle triangle in triangles)
             {
                 string name = GetCapturedMaterialName(triangle);
                 if (!materials.ContainsKey(name)) materials.Add(name, GetCapturedMaterialColor(triangle));
+                if (!materialTextures.ContainsKey(name) && !string.IsNullOrEmpty(triangle.TextureKey) &&
+                    SayakaGL.UcodeSimulator.CapturedTextures.ContainsKey(triangle.TextureKey))
+                    materialTextures.Add(name, "RoomTextures/" + GetCapturedTextureFilename(triangle.TextureKey));
             }
 
             using (StreamWriter materialWriter = new StreamWriter(Path.Combine(importPath, mtlName), false, Encoding.UTF8))
@@ -2026,9 +2038,42 @@ namespace SharpOcarina
                         material.Value.R, material.Value.G, material.Value.B));
                     materialWriter.WriteLine(string.Format(CultureInfo.InvariantCulture, "d {0}", material.Value.A));
                     materialWriter.WriteLine("illum 1");
+                    string textureFile;
+                    if (materialTextures.TryGetValue(material.Key, out textureFile))
+                        materialWriter.WriteLine("map_Kd " + textureFile);
                 }
             }
             return objPath;
+        }
+
+        private static string GetCapturedTextureFilename(string textureKey)
+        {
+            return "N64Tex_" + textureKey + ".png";
+        }
+
+        private static void WriteCapturedTexture(string texturePath, string textureKey, byte[] rgba)
+        {
+            string filename = Path.Combine(texturePath, GetCapturedTextureFilename(textureKey));
+            if (File.Exists(filename)) return;
+
+            string[] parts = textureKey.Split('_');
+            if (parts.Length < 3) return;
+            string[] dimensions = parts[2].Split('x');
+            int width, height;
+            if (!Int32.TryParse(dimensions[0], out width) || !Int32.TryParse(dimensions[1], out height) || width <= 0 || height <= 0)
+                return;
+            if (rgba == null || rgba.Length < width * height * 4) return;
+
+            using (Bitmap bitmap = new Bitmap(width, height, System.Drawing.Imaging.PixelFormat.Format32bppArgb))
+            {
+                for (int y = 0; y < height; y++)
+                    for (int x = 0; x < width; x++)
+                    {
+                        int offset = (y * width + x) * 4;
+                        bitmap.SetPixel(x, y, Color.FromArgb(rgba[offset + 3], rgba[offset], rgba[offset + 1], rgba[offset + 2]));
+                    }
+                bitmap.Save(filename, ImageFormat.Png);
+            }
         }
 
         private static OpenTK.Graphics.Color4 GetCapturedMaterialColor(SayakaGL.UcodeSimulator.CapturedTriangle triangle)
@@ -2049,7 +2094,8 @@ namespace SharpOcarina
         private static string GetCapturedMaterialName(SayakaGL.UcodeSimulator.CapturedTriangle triangle)
         {
             OpenTK.Graphics.Color4 color = GetCapturedMaterialColor(triangle);
-            return ((int)(color.R * 255.0f)).ToString("X2") + ((int)(color.G * 255.0f)).ToString("X2") + ((int)(color.B * 255.0f)).ToString("X2") + ((int)(color.A * 255.0f)).ToString("X2");
+            string name = ((int)(color.R * 255.0f)).ToString("X2") + ((int)(color.G * 255.0f)).ToString("X2") + ((int)(color.B * 255.0f)).ToString("X2") + ((int)(color.A * 255.0f)).ToString("X2");
+            return name + (string.IsNullOrEmpty(triangle.TextureKey) ? "" : "_TX" + triangle.TextureKey);
         }
 
         public void ConvertPreview(bool ConsecutiveRoomInject, bool ForceRGBATextures)
@@ -2087,6 +2133,7 @@ namespace SharpOcarina
             }
 
             // Go through the rooms...
+            SayakaGL.UcodeSimulator.BeginTextureCapture();
             for (int i = 0; i < _Rooms.Count; i++)
             {
                 // Make a DList list for the UcodeSimulator for each

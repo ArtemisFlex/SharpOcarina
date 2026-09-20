@@ -278,10 +278,24 @@ namespace SharpOcarina.SayakaGL
             public Vector2d[] TexCoords;
             public Vector3d[] Normals;
             public Color4[] Colors;
+            public string TextureKey;
         }
 
         public static bool CaptureGeometry = false;
         public static List<CapturedTriangle> CapturedTriangles = new List<CapturedTriangle>();
+        public static Dictionary<string, byte[]> CapturedTextures = new Dictionary<string, byte[]>();
+
+        public static void BeginTextureCapture()
+        {
+            CapturedTextures.Clear();
+        }
+
+        public static string GetTextureCaptureKey(int activeTexture)
+        {
+            NTextureStruct texture = NGraphics.Textures[activeTexture];
+            return texture.Address.ToString("X8") + "_" + texture.Format.ToString("X2") + "_" +
+                texture.RealWidth.ToString() + "x" + texture.RealHeight.ToString();
+        }
 
         public static void BeginGeometryCapture()
         {
@@ -932,9 +946,15 @@ namespace SharpOcarina.SayakaGL
                     CapturedTriangles.Add(new CapturedTriangle
                     {
                         Positions = new[] { Vertices[a].Position, Vertices[b].Position, Vertices[c].Position },
-                        TexCoords = new[] { Vertices[a].TexCoord, Vertices[b].TexCoord, Vertices[c].TexCoord },
+                        TexCoords = new[]
+                        {
+                            GetNormalizedTexCoord(Vertices[a].TexCoord, 0),
+                            GetNormalizedTexCoord(Vertices[b].TexCoord, 0),
+                            GetNormalizedTexCoord(Vertices[c].TexCoord, 0)
+                        },
                         Normals = new[] { Vertices[a].Normals, Vertices[b].Normals, Vertices[c].Normals },
-                        Colors = new[] { Vertices[a].Colors, Vertices[b].Colors, Vertices[c].Colors }
+                        Colors = new[] { Vertices[a].Colors, Vertices[b].Colors, Vertices[c].Colors },
+                        TextureKey = GetTextureCaptureKey(0)
                     });
                 }
             }
@@ -999,6 +1019,16 @@ namespace SharpOcarina.SayakaGL
 
             GL.End();
 
+        }
+
+        private static Vector2d GetNormalizedTexCoord(Vector2d texCoord, int activeTexture)
+        {
+            NTextureStruct texture = NGraphics.Textures[activeTexture];
+            double width = texture.RealWidth == 0 ? 1.0 : texture.RealWidth;
+            double height = texture.RealHeight == 0 ? 1.0 : texture.RealHeight;
+            return new Vector2d(
+                texCoord.X * (texture.ScaleS * texture.ShiftScaleS) / 32.0f / width,
+                texCoord.Y * (texture.ScaleT * texture.ShiftScaleT) / 32.0f / height);
         }
 
         #endregion
@@ -1842,6 +1872,9 @@ namespace SharpOcarina.SayakaGL
                 (int)NGraphics.Textures[ActiveTexture].RealWidth,
                 (int)NGraphics.Textures[ActiveTexture].RealHeight,
                 TextureBuffer);
+
+            if (CaptureGeometry)
+                CapturedTextures[GetTextureCaptureKey(ActiveTexture)] = (byte[])TextureBuffer.Clone();
 
             if (NGraphics.Textures[ActiveTexture].CMS == 2 || NGraphics.Textures[ActiveTexture].CMS == 3)
                 GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS, (int)All.ClampToEdge);
