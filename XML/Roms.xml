@@ -85,6 +85,12 @@
 	   MessageEntryTable="00B808AC"
 	   MessageDataTable="0092D000"
        >OoT JP/US 1.0</ROM>
+  <!-- NTSC 1.2 scene-table support. The zero-valued fields are intentionally
+       left unavailable until their version-specific offsets are verified. -->
+  <ROM Key="05" Game="OOT" Prefix="N12" Build="98-11-12 18:17:03"
+       SceneTable="00B71450"
+       SceneTableEnd="00B71C34"
+       >OoT NTSC 1.2 (scene table)</ROM>
   <ROM Key="02" Game="MM" Prefix="MQU" Build="03-08-26 04:20:25" Comment="INCOMPLETE!!!"
        SceneTable="00C67660" 
        SceneTableEnd="00C68760" 

@@ -23073,45 +23073,45 @@ namespace SharpOcarina
                                     {
                                         result.Game = nodeAtt["Game"].Value;
                                         result.Prefix = nodeAtt["Prefix"].Value;
-                                        result.SceneTable = Convert.ToUInt32(nodeAtt["SceneTable"].Value, 16);
-                                        result.SceneTableEnd = Convert.ToUInt32(nodeAtt["SceneTableEnd"].Value, 16);
-                                        result.EntranceTableStart = Convert.ToUInt32(nodeAtt["EntranceTableStart"].Value, 16);
-                                        result.EntranteTableEnd = Convert.ToUInt32(nodeAtt["EntranteTableEnd"].Value, 16);
-                                        result.CutsceneTableStart = Convert.ToUInt32(nodeAtt["CutsceneTableStart"].Value, 16);
-                                        result.CutsceneTableEnd = Convert.ToUInt32(nodeAtt["CutsceneTableEnd"].Value, 16);
-                                        result.DmaTableStart = Convert.ToUInt32(nodeAtt["DmaTableStart"].Value, 16);
-                                        result.DmaTableEnd = Convert.ToUInt32(nodeAtt["DmaTableEnd"].Value, 16);
-                                        result.SceneDmaTableStart = Convert.ToUInt32(nodeAtt["SceneDmaTableStart"].Value, 16);
-                                        result.SceneDmaTableEnd = Convert.ToUInt32(nodeAtt["SceneDmaTableEnd"].Value, 16);
-                                        result.RestrictionFlagStart = Convert.ToUInt32(nodeAtt["RestrictionFlagStart"].Value, 16);
-                                        result.RestrictionFlagEnd = Convert.ToUInt32(nodeAtt["RestrictionFlagEnd"].Value, 16);
-                                        result.DefaultSaveFile = Convert.ToUInt32(nodeAtt["DefaultSaveFile"].Value, 16);
-                                        result.HeaderTitle = Convert.ToUInt32(nodeAtt["HeaderTitle"].Value, 16);
-                                        result.EntranceTitle = Convert.ToUInt32(nodeAtt["EntranceTitle"].Value, 16);
-                                        result.HeaderNewFile = Convert.ToUInt32(nodeAtt["HeaderNewFile"].Value, 16);
-                                        result.EntranceNewFile = Convert.ToUInt32(nodeAtt["EntranceNewFile"].Value, 16);
-                                        result.AgeNewFile = Convert.ToUInt32(nodeAtt["AgeNewFile"].Value, 16);
-                                        result.AgeTitle = Convert.ToUInt32(nodeAtt["AgeTitle"].Value, 16);
-                                        result.RespawnChild = Convert.ToUInt32(nodeAtt["RespawnChild"].Value, 16);
-                                        result.RespawnAdult = Convert.ToUInt32(nodeAtt["RespawnAdult"].Value, 16);
-                                        result.FirstScene = Convert.ToUInt32(nodeAtt["FirstScene"].Value, 16);
-                                        result.SubscreenMapInfo = Convert.ToUInt32(nodeAtt["SubscreenMapInfo"].Value, 16);
-                                        result.SubscreenMapInfo2 = Convert.ToUInt32(nodeAtt["SubscreenMapInfo2"].Value, 16);
-                                        result.SubscreenMapCompassIcons = Convert.ToUInt32(nodeAtt["SubscreenMapCompassIcons"].Value, 16);
-                                        result.SubscreenMapFloorTextures = Convert.ToUInt32(nodeAtt["SubscreenMapFloorTextures"].Value, 16);
-                                        result.SubscreenMapTitleCards = Convert.ToUInt32(nodeAtt["SubscreenMapTitleCards"].Value, 16);
-                                        result.SubscreenMapFloorAmount = Convert.ToUInt32(nodeAtt["SubscreenMapFloorAmount"].Value, 16);
-                                        result.SubscreenMapChestVertexData = Convert.ToUInt32(nodeAtt["SubscreenMapChestVertexData"].Value, 16);
-                                        result.SubscreenPatch = nodeAtt["SubscreenPatch"].Value;
-                                        result.SpecialTextureTable = Convert.ToUInt32(nodeAtt["SpecialTextureTable"].Value, 16);
-                                        result.ActorTable = Convert.ToUInt32(nodeAtt["ActorTable"].Value, 16);
-                                        result.ActorTableEnd = Convert.ToUInt32(nodeAtt["ActorTableEnd"].Value, 16);
-                                        result.ObjectTable = Convert.ToUInt32(nodeAtt["ObjectTable"].Value, 16);
-                                        result.ParticleTable = Convert.ToUInt32(nodeAtt["ParticleTable"].Value, 16);
-                                        result.ParticleTableEnd = Convert.ToUInt32(nodeAtt["ParticleTableEnd"].Value, 16);
-                                        result.RandomDropTable = Convert.ToUInt32(nodeAtt["RandomDropTable"].Value, 16);
-                                        result.MessageEntryTable = Convert.ToUInt32(nodeAtt["MessageEntryTable"].Value, 16);
-                                        result.MessageDataTable = Convert.ToUInt32(nodeAtt["MessageDataTable"].Value, 16);
+                                        result.SceneTable = ReadRomOffset(nodeAtt, "SceneTable");
+                                        result.SceneTableEnd = ReadRomOffset(nodeAtt, "SceneTableEnd");
+                                        result.EntranceTableStart = ReadRomOffset(nodeAtt, "EntranceTableStart");
+                                        result.EntranteTableEnd = ReadRomOffset(nodeAtt, "EntranteTableEnd");
+                                        result.CutsceneTableStart = ReadRomOffset(nodeAtt, "CutsceneTableStart");
+                                        result.CutsceneTableEnd = ReadRomOffset(nodeAtt, "CutsceneTableEnd");
+                                        result.DmaTableStart = ReadRomOffset(nodeAtt, "DmaTableStart");
+                                        result.DmaTableEnd = ReadRomOffset(nodeAtt, "DmaTableEnd");
+                                        result.SceneDmaTableStart = ReadRomOffset(nodeAtt, "SceneDmaTableStart");
+                                        result.SceneDmaTableEnd = ReadRomOffset(nodeAtt, "SceneDmaTableEnd");
+                                        result.RestrictionFlagStart = ReadRomOffset(nodeAtt, "RestrictionFlagStart");
+                                        result.RestrictionFlagEnd = ReadRomOffset(nodeAtt, "RestrictionFlagEnd");
+                                        result.DefaultSaveFile = ReadRomOffset(nodeAtt, "DefaultSaveFile");
+                                        result.HeaderTitle = ReadRomOffset(nodeAtt, "HeaderTitle");
+                                        result.EntranceTitle = ReadRomOffset(nodeAtt, "EntranceTitle");
+                                        result.HeaderNewFile = ReadRomOffset(nodeAtt, "HeaderNewFile");
+                                        result.EntranceNewFile = ReadRomOffset(nodeAtt, "EntranceNewFile");
+                                        result.AgeNewFile = ReadRomOffset(nodeAtt, "AgeNewFile");
+                                        result.AgeTitle = ReadRomOffset(nodeAtt, "AgeTitle");
+                                        result.RespawnChild = ReadRomOffset(nodeAtt, "RespawnChild");
+                                        result.RespawnAdult = ReadRomOffset(nodeAtt, "RespawnAdult");
+                                        result.FirstScene = ReadRomOffset(nodeAtt, "FirstScene");
+                                        result.SubscreenMapInfo = ReadRomOffset(nodeAtt, "SubscreenMapInfo");
+                                        result.SubscreenMapInfo2 = ReadRomOffset(nodeAtt, "SubscreenMapInfo2");
+                                        result.SubscreenMapCompassIcons = ReadRomOffset(nodeAtt, "SubscreenMapCompassIcons");
+                                        result.SubscreenMapFloorTextures = ReadRomOffset(nodeAtt, "SubscreenMapFloorTextures");
+                                        result.SubscreenMapTitleCards = ReadRomOffset(nodeAtt, "SubscreenMapTitleCards");
+                                        result.SubscreenMapFloorAmount = ReadRomOffset(nodeAtt, "SubscreenMapFloorAmount");
+                                        result.SubscreenMapChestVertexData = ReadRomOffset(nodeAtt, "SubscreenMapChestVertexData");
+                                        result.SubscreenPatch = nodeAtt["SubscreenPatch"] == null ? "0" : nodeAtt["SubscreenPatch"].Value;
+                                        result.SpecialTextureTable = ReadRomOffset(nodeAtt, "SpecialTextureTable");
+                                        result.ActorTable = ReadRomOffset(nodeAtt, "ActorTable");
+                                        result.ActorTableEnd = ReadRomOffset(nodeAtt, "ActorTableEnd");
+                                        result.ObjectTable = ReadRomOffset(nodeAtt, "ObjectTable");
+                                        result.ParticleTable = ReadRomOffset(nodeAtt, "ParticleTable");
+                                        result.ParticleTableEnd = ReadRomOffset(nodeAtt, "ParticleTableEnd");
+                                        result.RandomDropTable = ReadRomOffset(nodeAtt, "RandomDropTable");
+                                        result.MessageEntryTable = ReadRomOffset(nodeAtt, "MessageEntryTable");
+                                        result.MessageDataTable = ReadRomOffset(nodeAtt, "MessageDataTable");
 
 
                                         found = true;
@@ -23127,7 +23127,7 @@ namespace SharpOcarina
                     }
                     if (!found)
                     {
-                        MessageBox.Show("Only OoT MQ debug, OoT 1.0 U, MM J 1.0 and MM U 1.0 roms are supported", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        MessageBox.Show("Only OoT MQ debug, OoT NTSC 1.0/1.2, MM J 1.0 and MM U 1.0 roms are supported", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                         return result;
                     }
                 }
@@ -23136,6 +23136,15 @@ namespace SharpOcarina
 
 
             return result;
+        }
+
+        private static uint ReadRomOffset(XmlAttributeCollection attributes, string name)
+        {
+            XmlAttribute attribute = attributes[name];
+            if (attribute == null || String.IsNullOrWhiteSpace(attribute.Value))
+                return 0;
+
+            return Convert.ToUInt32(attribute.Value, 16);
         }
 
         public void RecalculateCRC(Stream sw)
