@@ -310,6 +310,7 @@ namespace SharpOcarina
         private int authoringTreeRoom = -1;
         private SplitContainer authoringShellSplit;
         private SplitContainer authoringCenterDetailsSplit;
+        private bool updatingForm;
 
         private sealed class AuthoringSelection
         {
@@ -5608,6 +5609,20 @@ namespace SharpOcarina
 
         private void UpdateForm()
         {
+            if (NowLoading || updatingForm) return;
+            updatingForm = true;
+            try
+            {
+                UpdateFormCore();
+            }
+            finally
+            {
+                updatingForm = false;
+            }
+        }
+
+        private void UpdateFormCore()
+        {
 
             UpdateMemoryBudgetNotifier();
             UpdateAuthoringWorkspace();
@@ -8216,6 +8231,13 @@ namespace SharpOcarina
 
         private void SelectRoom(int Index)
         {
+            if (CurrentScene == null || RoomList == null || RoomList.SelectedIndex < 0 ||
+                RoomList.SelectedIndex >= CurrentScene.Rooms.Count || Index < 0 ||
+                Index >= CurrentScene.Rooms.Count)
+            {
+                GroupList.DataSource = null;
+                return;
+            }
 
             GroupList.BeginUpdate();
             if (customcombiner != null) customcombiner.Close();
@@ -9775,6 +9797,9 @@ namespace SharpOcarina
 
         private void listBox1_SelectedIndexChanged(object sender, EventArgs e)
         {
+            if (NowLoading || CurrentScene == null || RoomList.SelectedIndex < 0 ||
+                RoomList.SelectedIndex >= CurrentScene.Rooms.Count)
+                return;
             SelectRoom(RoomList.SelectedIndex);
         }
 
@@ -19568,6 +19593,7 @@ namespace SharpOcarina
             //TODO
 
             newSceneToolStripMenuItem_Click(new object(), new EventArgs());
+            NowLoading = true;
             SimulateN64Gfx = false;
 
             CurrentScene = LoadZsceneData(data, sceneid);
@@ -19605,6 +19631,8 @@ namespace SharpOcarina
             SimulateN64CheckBox.Checked = true;
 
             CurrentScene.ConvertPreview(settings.ConsecutiveRoomInject, settings.ForceRGBATextures);
+            NowLoading = false;
+            UpdateForm();
         }
 
         private void CameraCopyViewport_Click(object sender, EventArgs e)
