@@ -300,6 +300,8 @@ namespace SharpOcarina
         private TextBox authoringSearchBox;
         private PropertyGrid authoringDetailsGrid;
         private Label authoringSelectionLabel;
+        private Button authoringAssignPathButton;
+        private AuthoringSelection authoringSelection;
         private bool authoringTreeDirty = true;
         private ZScene authoringTreeScene;
         private int authoringTreeRoom = -1;
@@ -596,9 +598,19 @@ namespace SharpOcarina
         {
             Panel panel = new Panel { Dock = DockStyle.Fill, Padding = new Padding(6) };
             authoringSelectionLabel = new Label { Text = "Nothing selected", Dock = DockStyle.Top, Height = 28, Font = new Font(Font, FontStyle.Bold) };
+            authoringAssignPathButton = new Button
+            {
+                Text = "Assign selected actor to OoT pathway...",
+                Dock = DockStyle.Top,
+                Height = 28,
+                Visible = false,
+                UseVisualStyleBackColor = true
+            };
+            authoringAssignPathButton.Click += delegate { AssignAuthoringActorPath(); };
             authoringDetailsGrid = new PropertyGrid { Dock = DockStyle.Fill, ToolbarVisible = false, HelpVisible = true, PropertySort = PropertySort.Categorized };
             authoringDetailsGrid.PropertyValueChanged += delegate { authoringTreeDirty = true; UpdateForm(); };
             panel.Controls.Add(authoringDetailsGrid);
+            panel.Controls.Add(authoringAssignPathButton);
             panel.Controls.Add(authoringSelectionLabel);
             return panel;
         }
@@ -662,7 +674,9 @@ namespace SharpOcarina
             }
 
             authoringDetailsGrid.SelectedObject = selection.Value;
+            authoringSelection = selection;
             authoringSelectionLabel.Text = selection.Kind + "  |  Room " + (selection.RoomIndex < 0 ? "-" : selection.RoomIndex.ToString());
+            UpdateAuthoringActorActions();
         }
 
         private void UpdateAuthoringWorkspace()
@@ -673,6 +687,8 @@ namespace SharpOcarina
                 authoringContentTree.Nodes.Clear();
                 authoringDetailsGrid.SelectedObject = null;
                 authoringSelectionLabel.Text = "Open a scene to begin authoring";
+                authoringSelection = null;
+                UpdateAuthoringActorActions();
                 return;
             }
 
@@ -698,6 +714,102 @@ namespace SharpOcarina
                 authoringTreeScene = CurrentScene;
                 authoringTreeRoom = RoomList.SelectedIndex;
                 authoringTreeDirty = false;
+            }
+        }
+
+        private void UpdateAuthoringActorActions()
+        {
+            if (authoringAssignPathButton == null) return;
+
+            bool canAssignPath = CurrentScene != null && authoringSelection != null && authoringSelection.Kind == "Actor" &&
+                authoringSelection.RoomIndex >= 0 && authoringSelection.ItemIndex >= 0 &&
+                authoringSelection.RoomIndex < CurrentScene.Rooms.Count &&
+                authoringSelection.ItemIndex < CurrentScene.Rooms[authoringSelection.RoomIndex].ZActors.Count &&
+                CurrentScene.Pathways.Count > 0;
+
+            if (canAssignPath)
+            {
+                ZActor actor = CurrentScene.Rooms[authoringSelection.RoomIndex].ZActors[authoringSelection.ItemIndex];
+                ushort actorId = actor.Number;
+                if (!ActorCache.ContainsKey(actorId) && ActorCache.ContainsKey((ushort)(actorId & 0x0FFF)))
+                    actorId = (ushort)(actorId & 0x0FFF);
+                canAssignPath = ActorCache.ContainsKey(actorId) && ActorCache[actorId].pathwayID != null &&
+                    ActorCache[actorId].pathwayID.Target == "Var";
+            }
+
+            authoringAssignPathButton.Visible = canAssignPath;
+        }
+
+        private void AssignAuthoringActorPath()
+        {
+            if (authoringSelection == null || authoringSelection.Kind != "Actor" || CurrentScene == null ||
+                authoringSelection.RoomIndex < 0 || authoringSelection.RoomIndex >= CurrentScene.Rooms.Count ||
+                authoringSelection.ItemIndex < 0 || authoringSelection.ItemIndex >= CurrentScene.Rooms[authoringSelection.RoomIndex].ZActors.Count)
+                return;
+
+            ZActor actor = CurrentScene.Rooms[authoringSelection.RoomIndex].ZActors[authoringSelection.ItemIndex];
+            ushort actorId = actor.Number;
+            if (!ActorCache.ContainsKey(actorId) && ActorCache.ContainsKey((ushort)(actorId & 0x0FFF)))
+                actorId = (ushort)(actorId & 0x0FFF);
+            if (!ActorCache.ContainsKey(actorId) || ActorCache[actorId].pathwayID == null ||
+                ActorCache[actorId].pathwayID.Target != "Var" || CurrentScene.Pathways.Count == 0)
+                return;
+
+            ActorProperty pathProperty = ActorCache[actorId].pathwayID;
+            int currentPath = actor.GetPropertyValue(pathProperty);
+            using (Form dialog = new Form())
+            using (ComboBox pathList = new ComboBox())
+            using (Button accept = new Button())
+            using (Button cancel = new Button())
+            {
+                dialog.Text = "Assign OoT Pathway";
+                dialog.FormBorderStyle = FormBorderStyle.FixedDialog;
+                dialog.StartPosition = FormStartPosition.CenterParent;
+                dialog.MinimizeBox = false;
+                dialog.MaximizeBox = false;
+                dialog.ClientSize = new Size(320, 118);
+
+                Label label = new Label
+                {
+                    AutoSize = false,
+                    Location = new Point(12, 10),
+                    Size = new Size(296, 34),
+                    Text = "Path ID is written to this actor's existing Variable field."
+                };
+                pathList.DropDownStyle = ComboBoxStyle.DropDownList;
+                pathList.Location = new Point(12, 48);
+                pathList.Size = new Size(196, 24);
+                for (int i = 0; i < CurrentScene.Pathways.Count; i++)
+                    pathList.Items.Add("Path " + i + " (" + CurrentScene.Pathways[i].Points.Count + " points)");
+                pathList.SelectedIndex = Math.Max(0, Math.Min(currentPath, pathList.Items.Count - 1));
+
+                accept.Text = "Assign";
+                accept.DialogResult = DialogResult.OK;
+                accept.Location = new Point(214, 46);
+                accept.Size = new Size(94, 26);
+                cancel.Text = "Cancel";
+                cancel.DialogResult = DialogResult.Cancel;
+                cancel.Location = new Point(214, 76);
+                cancel.Size = new Size(94, 26);
+                dialog.Controls.Add(label);
+                dialog.Controls.Add(pathList);
+                dialog.Controls.Add(accept);
+                dialog.Controls.Add(cancel);
+                dialog.AcceptButton = accept;
+                dialog.CancelButton = cancel;
+
+                if (dialog.ShowDialog(this) != DialogResult.OK || pathList.SelectedIndex < 0) return;
+
+                actorpick = _Actor_;
+                StoreUndo(_Actor_, authoringSelection.RoomIndex);
+                actor.Variable = (ushort)((actor.Variable & ~pathProperty.Mask) |
+                    (((ushort)pathList.SelectedIndex << pathProperty.Position) & pathProperty.Mask));
+                RoomList.SelectedIndex = authoringSelection.RoomIndex;
+                actorEditControl.SetActors(ref CurrentScene.Rooms[authoringSelection.RoomIndex].ZActors);
+                actorEditControl.ActorNumber = authoringSelection.ItemIndex;
+                actorEditControl.UpdateActorEdit();
+                authoringTreeDirty = true;
+                UpdateForm();
             }
         }
 
