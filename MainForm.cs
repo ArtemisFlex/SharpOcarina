@@ -411,9 +411,10 @@ namespace SharpOcarina
             }
 #endif
 
-            if (File.Exists("Settings.xml"))
+            string settingsFile = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Settings.xml");
+            if (File.Exists(settingsFile))
             {
-                settings = IO.Import<Settings>("Settings.xml");
+                settings = IO.Import<Settings>(settingsFile);
             }
 
             this.SetStyle(ControlStyles.DoubleBuffer, true);
@@ -2766,7 +2767,9 @@ namespace SharpOcarina
 
         public void PaintControl()
         {
-            if (IsReady == false)
+            if (IsReady == false || CurrentScene == null || CurrentScene.Rooms == null ||
+                CurrentScene.Rooms.Count == 0 || RoomList == null ||
+                RoomList.SelectedIndex < 0 || RoomList.SelectedIndex >= CurrentScene.Rooms.Count)
                 return;
 
             //SwapBuffers();
@@ -8466,7 +8469,7 @@ namespace SharpOcarina
             if (settings.firsttime)
             {
                 settings.firsttime = false;
-                IO.Export<Settings>(settings, "Settings.xml");
+                IO.Export<Settings>(settings, Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Settings.xml"));
                 ShowControls(true);
             }
 
@@ -12952,7 +12955,7 @@ namespace SharpOcarina
 
         private void saveOptionsToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            IO.Export<Settings>(settings, "Settings.xml");
+            IO.Export<Settings>(settings, Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Settings.xml"));
         }
 
         private void cutsceneTableEditorToolStripMenuItem_Click(object sender, EventArgs e)
