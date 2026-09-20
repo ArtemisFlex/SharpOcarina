@@ -3013,6 +3013,13 @@ namespace SharpOcarina
 
 
             /* Process rooms... */
+            if (MainForm.n64preview)
+            {
+                if (OriginalSceneData != null && OriginalSceneData.Count != 0)
+                    SayakaGL.GameHandler.LoadToRAM(MainHeader.OriginalSceneData.ToArray(), 0x02);
+                else if (MainHeader.SceneData != null)
+                    SayakaGL.GameHandler.LoadToRAM(MainHeader.SceneData.ToArray(), 0x02);
+            }
             if (MainForm.n64preview && PregeneratedMesh)
                 SayakaGL.UcodeSimulator.BeginTextureCapture();
             for (int i = 0; i < _Rooms.Count; i++)
