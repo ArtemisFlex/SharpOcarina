@@ -305,6 +305,7 @@ namespace SharpOcarina
         private Button authoringAddPathPointButton;
         private Button authoringDeletePathPointButton;
         private Button authoringOpenLegacyButton;
+        private Button authoringFrameButton;
         private AuthoringSelection authoringSelection;
         private bool authoringTreeDirty = true;
         private ZScene authoringTreeScene;
@@ -721,6 +722,15 @@ namespace SharpOcarina
                 UseVisualStyleBackColor = true
             };
             authoringOpenLegacyButton.Click += delegate { OpenAuthoringSelectionInLegacyEditor(); };
+            authoringFrameButton = new Button
+            {
+                Text = "Frame selection in viewport",
+                Dock = DockStyle.Top,
+                Height = 28,
+                Enabled = false,
+                UseVisualStyleBackColor = true
+            };
+            authoringFrameButton.Click += delegate { FrameAuthoringSelection(); };
             authoringDetailsGrid = new PropertyGrid { Dock = DockStyle.Fill, ToolbarVisible = false, HelpVisible = true, PropertySort = PropertySort.Categorized };
             authoringDetailsGrid.PropertyValueChanged += delegate { authoringTreeDirty = true; UpdateForm(); };
             panel.Controls.Add(authoringDetailsGrid);
@@ -729,6 +739,7 @@ namespace SharpOcarina
             panel.Controls.Add(authoringAddPathButton);
             panel.Controls.Add(authoringAssignPathButton);
             panel.Controls.Add(authoringOpenLegacyButton);
+            panel.Controls.Add(authoringFrameButton);
             panel.Controls.Add(authoringSelectionLabel);
             return panel;
         }
@@ -821,6 +832,68 @@ namespace SharpOcarina
                 default:
                     return false;
             }
+        }
+
+        private bool TryGetAuthoringSelectionPosition(out Vector3d position)
+        {
+            position = Vector3d.Zero;
+            if (CurrentScene == null || authoringSelection == null) return false;
+
+            int room = authoringSelection.RoomIndex;
+            if (room >= 0 && room < CurrentScene.Rooms.Count &&
+                (authoringSelection.Kind == "Room" || authoringSelection.Kind == "Object" || authoringSelection.Kind == "Group"))
+            {
+                if (CurrentScene.Rooms[room].ObjModel == null || CurrentScene.Rooms[room].ObjModel.Vertices.Count == 0) return false;
+                position = GetCenterPoint(CurrentScene.Rooms[room].ObjModel.Vertices);
+                return true;
+            }
+
+            if (authoringSelection.Kind == "Actor" && room >= 0 && room < CurrentScene.Rooms.Count &&
+                authoringSelection.ItemIndex >= 0 && authoringSelection.ItemIndex < CurrentScene.Rooms[room].ZActors.Count)
+            {
+                ZActor actor = CurrentScene.Rooms[room].ZActors[authoringSelection.ItemIndex];
+                position = new Vector3d(actor.XPos, actor.YPos, actor.ZPos);
+                return true;
+            }
+
+            if (authoringSelection.Kind == "Transition" && authoringSelection.ItemIndex >= 0 && authoringSelection.ItemIndex < CurrentScene.Transitions.Count)
+            {
+                ZActor transition = CurrentScene.Transitions[authoringSelection.ItemIndex];
+                position = new Vector3d(transition.XPos, transition.YPos, transition.ZPos);
+                return true;
+            }
+
+            if ((authoringSelection.Kind == "Path" || authoringSelection.Kind == "PathPoint") &&
+                authoringSelection.ItemIndex >= 0 && authoringSelection.ItemIndex < CurrentScene.Pathways.Count)
+            {
+                ZPathway path = CurrentScene.Pathways[authoringSelection.ItemIndex];
+                if (path.Points.Count == 0) return false;
+                if (authoringSelection.Kind == "PathPoint" && authoringSelection.PointIndex >= 0 && authoringSelection.PointIndex < path.Points.Count)
+                {
+                    Vector3 point = path.Points[authoringSelection.PointIndex];
+                    position = new Vector3d(point.X, point.Y, point.Z);
+                    return true;
+                }
+
+                Vector3 average = Vector3.Zero;
+                foreach (Vector3 point in path.Points) average += point;
+                average /= path.Points.Count;
+                position = new Vector3d(average.X, average.Y, average.Z);
+                return true;
+            }
+
+            return false;
+        }
+
+        private void FrameAuthoringSelection()
+        {
+            Vector3d position;
+            if (!TryGetAuthoringSelectionPosition(out position)) return;
+
+            Camera.Rot = Vector3d.Zero;
+            Camera.Pos = ConvertToCameraPosition(position);
+            Camera.Pos.Z -= 5.0;
+            glControl1.Invalidate();
         }
 
         private void SelectExistingAuthoringTab(string tabName)
@@ -978,6 +1051,7 @@ namespace SharpOcarina
             authoringAddPathPointButton.Visible = pathSelected;
             authoringDeletePathPointButton.Visible = pointSelected;
             authoringOpenLegacyButton.Visible = CanOpenAuthoringSelectionInLegacyEditor();
+            authoringFrameButton.Enabled = TryGetAuthoringSelectionPosition(out _);
         }
 
         private void AssignAuthoringActorPath()
