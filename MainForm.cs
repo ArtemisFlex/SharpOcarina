@@ -505,24 +505,20 @@ namespace SharpOcarina
                 Anchor = AnchorStyles.Top | AnchorStyles.Right,
                 BackColor = Color.FromArgb(245, 245, 245),
                 BorderStyle = BorderStyle.FixedSingle,
-                Location = new Point(ClientSize.Width - 325, 27),
-                Size = new Size(315, 88)
+                Size = new Size(435, 52)
             };
 
-            memoryRoomLabel = CreateBudgetLabel(4);
-            memorySceneLabel = CreateBudgetLabel(30);
-            memoryRomLabel = CreateBudgetLabel(56);
-            memoryRoomProgress = CreateBudgetProgress(4);
-            memorySceneProgress = CreateBudgetProgress(30);
-            memoryRomProgress = CreateBudgetProgress(56);
-            memoryBudgetPanel.Controls.Add(memoryRoomLabel);
-            memoryBudgetPanel.Controls.Add(memorySceneLabel);
-            memoryBudgetPanel.Controls.Add(memoryRomLabel);
-            memoryBudgetPanel.Controls.Add(memoryRoomProgress);
-            memoryBudgetPanel.Controls.Add(memorySceneProgress);
-            memoryBudgetPanel.Controls.Add(memoryRomProgress);
-            Controls.Add(memoryBudgetPanel);
-            memoryBudgetPanel.BringToFront();
+            memoryRoomLabel = CreateBudgetLabel(4, 2, 138);
+            memorySceneLabel = CreateBudgetLabel(147, 2, 138);
+            memoryRomLabel = CreateBudgetLabel(290, 2, 138);
+            memoryRoomProgress = CreateBudgetProgress(4, 20, 136);
+            memorySceneProgress = CreateBudgetProgress(147, 20, 136);
+            memoryRomProgress = CreateBudgetProgress(290, 20, 136);
+            memoryBudgetPanel.Controls.AddRange(new Control[]
+            {
+                memoryRoomLabel, memorySceneLabel, memoryRomLabel,
+                memoryRoomProgress, memorySceneProgress, memoryRomProgress
+            });
         }
 
         private void InitializeAuthoringWorkspace()
@@ -547,13 +543,21 @@ namespace SharpOcarina
             glControl1.Dock = DockStyle.Fill;
             tabControl1.Dock = DockStyle.Fill;
             Panel viewportHost = new Panel { Dock = DockStyle.Fill, Padding = new Padding(0, 28, 0, 0) };
-            FlowLayoutPanel viewportToolbar = new FlowLayoutPanel
+            Panel viewportToolbar = new Panel
             {
                 Dock = DockStyle.Top,
+                Height = 56,
+                BackColor = SystemColors.Control,
+                Padding = new Padding(2)
+            };
+            FlowLayoutPanel viewportCommands = new FlowLayoutPanel
+            {
+                Dock = DockStyle.Left,
+                Width = 420,
                 Height = 28,
                 FlowDirection = FlowDirection.LeftToRight,
                 WrapContents = false,
-                Padding = new Padding(2)
+                Padding = new Padding(0)
             };
             Button contentToggle = CreateViewportToggle("Content", delegate { authoringShellSplit.Panel1Collapsed = !authoringShellSplit.Panel1Collapsed; });
             Button detailsToggle = CreateViewportToggle("Details", delegate { authoringCenterDetailsSplit.Panel2Collapsed = !authoringCenterDetailsSplit.Panel2Collapsed; });
@@ -577,12 +581,20 @@ namespace SharpOcarina
                 IntegralHeight = true
             };
             authoringRoomSelector.SelectedIndexChanged += AuthoringRoomSelector_SelectedIndexChanged;
-            viewportToolbar.Controls.Add(contentToggle);
-            viewportToolbar.Controls.Add(detailsToggle);
-            viewportToolbar.Controls.Add(refreshAuthoring);
-            viewportToolbar.Controls.Add(focusViewport);
-            viewportToolbar.Controls.Add(roomLabel);
-            viewportToolbar.Controls.Add(authoringRoomSelector);
+            viewportCommands.Controls.Add(contentToggle);
+            viewportCommands.Controls.Add(detailsToggle);
+            viewportCommands.Controls.Add(refreshAuthoring);
+            viewportCommands.Controls.Add(focusViewport);
+            viewportCommands.Controls.Add(roomLabel);
+            viewportCommands.Controls.Add(authoringRoomSelector);
+            viewportToolbar.Controls.Add(viewportCommands);
+            memoryBudgetPanel.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            memoryBudgetPanel.Location = new Point(viewportToolbar.Width - memoryBudgetPanel.Width - 4, 2);
+            viewportToolbar.Controls.Add(memoryBudgetPanel);
+            viewportToolbar.Resize += delegate
+            {
+                memoryBudgetPanel.Location = new Point(viewportToolbar.ClientSize.Width - memoryBudgetPanel.Width - 4, 2);
+            };
             viewportHost.Controls.Add(glControl1);
             viewportHost.Controls.Add(viewportToolbar);
             authoringCenterDetailsSplit.Panel1.Controls.Add(viewportHost);
@@ -1405,14 +1417,14 @@ namespace SharpOcarina
             }
         }
 
-        private static Label CreateBudgetLabel(int y)
+        private static Label CreateBudgetLabel(int x, int y, int width)
         {
-            return new Label { AutoSize = false, Location = new Point(6, y), Size = new Size(285, 18), Text = "Budget: n/a" };
+            return new Label { AutoSize = false, Location = new Point(x, y), Size = new Size(width, 18), Font = new Font(SystemFonts.DefaultFont.FontFamily, 7.5f), Text = "Budget: n/a" };
         }
 
-        private static ProgressBar CreateBudgetProgress(int y)
+        private static ProgressBar CreateBudgetProgress(int x, int y, int width)
         {
-            return new ProgressBar { Location = new Point(6, y + 17), Size = new Size(298, 8), Maximum = 1000, Style = ProgressBarStyle.Continuous };
+            return new ProgressBar { Location = new Point(x, y), Size = new Size(width, 8), Maximum = 1000, Style = ProgressBarStyle.Continuous };
         }
 
         private void UpdateMemoryBudgetNotifier()
@@ -1429,12 +1441,12 @@ namespace SharpOcarina
 
             int sceneUsed = CurrentScene == null ? 0 : CurrentScene.GeneratedSceneDataLength;
             int sceneBudget = CurrentScene == null ? 0 : CurrentScene.OriginalScenePackageLength;
-            SetBudget(memorySceneLabel, memorySceneProgress, "Scene package", sceneUsed, sceneBudget);
+            SetBudget(memorySceneLabel, memorySceneProgress, "Scene", sceneUsed, sceneBudget);
 
             long romUsed = 0;
             bool romLoaded = !string.IsNullOrEmpty(GlobalROM) && File.Exists(GlobalROM);
             if (romLoaded) romUsed = new FileInfo(GlobalROM).Length;
-            SetBudget(memoryRomLabel, memoryRomProgress, "ROM / 64 MiB N64 address space", romLoaded ? romUsed : 0, 64L * 1024L * 1024L, romLoaded);
+            SetBudget(memoryRomLabel, memoryRomProgress, "ROM", romLoaded ? romUsed : 0, 64L * 1024L * 1024L, romLoaded);
         }
 
         private static void SetBudget(Label label, ProgressBar progress, string name, long used, long budget, bool available = true)
