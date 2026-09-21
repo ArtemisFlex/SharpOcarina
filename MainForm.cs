@@ -960,8 +960,7 @@ namespace SharpOcarina
                         SelectRoomObject(authoringSelection.ItemIndex);
                     else if (authoringSelection.Kind == "Group")
                     {
-                        int groupIndex = CurrentScene.Rooms[authoringSelection.RoomIndex].ObjModel.Groups.IndexOf((ObjFile.Group)authoringSelection.Value);
-                        if (groupIndex >= 0) GroupList.SelectedIndex = groupIndex;
+                        SelectLegacyGroup(authoringSelection.RoomIndex, (ObjFile.Group)authoringSelection.Value);
                     }
                     break;
             }
@@ -1204,8 +1203,7 @@ namespace SharpOcarina
             else if (selection.Kind == "Group")
             {
                 tabControl1.SelectedTab = tabRooms;
-                int groupIndex = CurrentScene.Rooms[selection.RoomIndex].ObjModel.Groups.IndexOf((ObjFile.Group)selection.Value);
-                if (groupIndex >= 0) GroupList.SelectedIndex = groupIndex;
+                SelectLegacyGroup(selection.RoomIndex, (ObjFile.Group)selection.Value);
             }
 
             authoringDetailsGrid.SelectedObject = selection.Value;
@@ -1214,6 +1212,20 @@ namespace SharpOcarina
             selectedtimer = 90;
             UpdateAuthoringActorActions();
             glControl1.Invalidate();
+        }
+
+        private void SelectLegacyGroup(int roomIndex, ObjFile.Group group)
+        {
+            if (GroupList == null || CurrentScene == null || CurrentScene.Rooms == null || group == null ||
+                roomIndex < 0 || roomIndex >= CurrentScene.Rooms.Count ||
+                CurrentScene.Rooms[roomIndex] == null || CurrentScene.Rooms[roomIndex].ObjModel == null)
+                return;
+
+            int groupIndex = CurrentScene.Rooms[roomIndex].ObjModel.Groups.IndexOf(group);
+            if (groupIndex < 0 || groupIndex >= GroupList.Items.Count)
+                return;
+
+            GroupList.SelectedIndex = groupIndex;
         }
 
         private void UpdateAuthoringWorkspace()
