@@ -532,8 +532,6 @@ namespace SharpOcarina
                 Dock = DockStyle.Fill,
                 Orientation = Orientation.Vertical,
                 SplitterDistance = 220,
-                Panel1MinSize = 180,
-                Panel2MinSize = 620,
                 IsSplitterFixed = false
             };
             authoringCenterDetailsSplit = new SplitContainer
@@ -541,8 +539,6 @@ namespace SharpOcarina
                 Dock = DockStyle.Fill,
                 Orientation = Orientation.Vertical,
                 SplitterDistance = 760,
-                Panel1MinSize = 520,
-                Panel2MinSize = 260,
                 IsSplitterFixed = false
             };
 
