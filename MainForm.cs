@@ -10487,20 +10487,24 @@ namespace SharpOcarina
         private void UpdateObjectEdit()
         {
             if (CurrentScene == null || CurrentScene.Rooms == null || RoomList == null ||
+                RoomObjectListBox == null || SceneObjectListBox == null ||
                 RoomList.SelectedIndex < 0 || RoomList.SelectedIndex >= CurrentScene.Rooms.Count ||
+                CurrentScene.Rooms[RoomList.SelectedIndex] == null ||
                 CurrentScene.Rooms[RoomList.SelectedIndex].ZObjects == null)
             {
-                RoomObjectListBox.DataSource = null;
-                SceneObjectListBox.DataSource = null;
+                if (RoomObjectListBox != null) RoomObjectListBox.DataSource = null;
+                if (SceneObjectListBox != null) SceneObjectListBox.DataSource = null;
                 return;
             }
 
-            RoomObjectListBox.DataSource = CurrentScene.Rooms[RoomList.SelectedIndex].ZObjects;
+            ZScene.ZRoom selectedRoom = CurrentScene.Rooms[RoomList.SelectedIndex];
+            List<ZScene.ZUShort> roomObjects = selectedRoom.ZObjects;
+            RoomObjectListBox.DataSource = roomObjects;
             RoomObjectListBox.DisplayMember = "ValueHex";
             SceneObjectListBox.DataSource = CurrentScene.ZObjects ?? new List<ZScene.ZUShort>();
             SceneObjectListBox.DisplayMember = "ValueHex";
-            CurrencyManager roomObjects = RoomObjectListBox.BindingContext[CurrentScene.Rooms[RoomList.SelectedIndex].ZObjects] as CurrencyManager;
-            if (roomObjects != null) roomObjects.Refresh();
+            CurrencyManager roomObjectManager = RoomObjectListBox.BindingContext[roomObjects] as CurrencyManager;
+            if (roomObjectManager != null) roomObjectManager.Refresh();
             if (CurrentScene.ZObjects != null)
             {
                 CurrencyManager sceneObjects = SceneObjectListBox.BindingContext[CurrentScene.ZObjects] as CurrencyManager;
