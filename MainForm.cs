@@ -322,6 +322,8 @@ namespace SharpOcarina
         private SplitContainer authoringCenterDetailsSplit;
         private bool authoringDefaultsApplied;
         private Panel authoringViewportHost;
+        private Panel authoringDetailsHost;
+        private Control authoringDetailsControl;
         private Button authoringLegacyEditorsToggle;
         private ComboBox authoringRoomSelector;
         private bool updatingAuthoringRoomSelector;
@@ -639,10 +641,13 @@ namespace SharpOcarina
             authoringViewportHost.Controls.Add(glControl1);
             tabControl1.Dock = DockStyle.Fill;
             tabControl1.Visible = false;
-            authoringViewportHost.Controls.Add(tabControl1);
             authoringViewportHost.Controls.Add(viewportToolbar);
             authoringCenterDetailsSplit.Panel1.Controls.Add(authoringViewportHost);
-            authoringCenterDetailsSplit.Panel2.Controls.Add(CreateAuthoringDetailsPanel());
+            authoringDetailsHost = new Panel { Dock = DockStyle.Fill };
+            authoringDetailsControl = CreateAuthoringDetailsPanel();
+            authoringDetailsHost.Controls.Add(authoringDetailsControl);
+            authoringDetailsHost.Controls.Add(tabControl1);
+            authoringCenterDetailsSplit.Panel2.Controls.Add(authoringDetailsHost);
             authoringShellSplit.Panel1.Controls.Add(CreateAuthoringDrawer());
             authoringShellSplit.Panel2.Controls.Add(authoringCenterDetailsSplit);
             Controls.Add(authoringShellSplit);
@@ -654,17 +659,17 @@ namespace SharpOcarina
 
         private void ShowClassicEditors(bool show)
         {
-            if (tabControl1 == null || glControl1 == null)
+            if (tabControl1 == null || authoringDetailsControl == null)
                 return;
 
             tabControl1.Visible = show;
-            glControl1.Visible = !show;
+            authoringDetailsControl.Visible = !show;
             if (authoringLegacyEditorsToggle != null)
-                authoringLegacyEditorsToggle.Text = show ? "Viewport" : "Classic editors";
+                authoringLegacyEditorsToggle.Text = show ? "Viewport details" : "Classic editors";
             if (show)
                 tabControl1.BringToFront();
             else
-                glControl1.BringToFront();
+                authoringDetailsControl.BringToFront();
         }
 
         private void ApplyDefaultAuthoringSplitters()
