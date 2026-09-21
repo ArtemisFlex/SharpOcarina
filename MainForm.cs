@@ -10606,20 +10606,24 @@ namespace SharpOcarina
 
         private void SelectRoomObject()
         {
-            SelectRoomObject(RoomObjectListBox.Items.Count - 1);
+            SelectRoomObject(RoomObjectListBox == null ? -1 : RoomObjectListBox.Items.Count - 1);
         }
 
         private void SelectRoomObject(int Index)
         {
-            if (Index >= 0)
-            {
-                RoomObjectListBox.DataSource = CurrentScene.Rooms[RoomList.SelectedIndex].ZObjects;
-                RoomObjectListBox.SelectedIndex = Index;
-            }
-            else
-                RoomObjectListBox.DataSource = null;
+            if (RoomObjectListBox == null || CurrentScene == null || CurrentScene.Rooms == null ||
+                RoomList == null || RoomList.SelectedIndex < 0 || RoomList.SelectedIndex >= CurrentScene.Rooms.Count ||
+                CurrentScene.Rooms[RoomList.SelectedIndex] == null ||
+                CurrentScene.Rooms[RoomList.SelectedIndex].ZObjects == null)
+                return;
 
+            List<ZScene.ZUShort> roomObjects = CurrentScene.Rooms[RoomList.SelectedIndex].ZObjects;
             RoomObjectListBox.DisplayMember = "ValueHex";
+            RoomObjectListBox.DataSource = roomObjects;
+            if (Index >= 0 && Index < RoomObjectListBox.Items.Count)
+                RoomObjectListBox.SelectedIndex = Index;
+            else
+                RoomObjectListBox.SelectedIndex = -1;
         }
 
         private void SelectSceneObject()
