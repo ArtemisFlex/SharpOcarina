@@ -2548,9 +2548,10 @@ namespace SharpOcarina
 
         private void DrawActorModel2(ZActor Actor, bool DrawBorder, bool transparency)
         {
-            if (!SimulateN64Gfx) return;
             ushort ActorID = !MainForm.settings.MajorasMask ? Actor.Number : (ushort)(Actor.Number & 0x0FFF);
             int render = FindActorRender((ushort)((ActorID == 0 && settings.RenderChildLink) ? 0xFFFF : ActorID), Actor.Variable);
+            if (render < 0 || render >= zobj_cache.Count)
+                return;
             float animroty = (render != -1) ? zobj_cache[render].RotY * globalframe : 0.0f;
             float scale = 0.1f;
 
@@ -3779,6 +3780,16 @@ namespace SharpOcarina
                                 GL.Enable(EnableCap.Texture2D);
                                 GL.Color4(Color.FromArgb((int)Room.TrueGroups[i].TintAlpha));
                                 Room.ObjModel.Render(Room.TrueGroups[i]);
+                            }
+
+                            // Imported/editable rooms do not enter the native
+                            // N64 display-list branch, so render their existing
+                            // OoT actors here as the opaque pass.
+                            if (incr3 == RoomList.SelectedIndex && settings.RenderActors &&
+                                CurrentScene.Rooms != null && incr3 < CurrentScene.Rooms.Count)
+                            {
+                                foreach (ZActor actor in CurrentScene.Rooms[incr3].ZActors)
+                                    DrawActorModel2(actor, true, false);
                             }
 
                             GL.PopMatrix();
