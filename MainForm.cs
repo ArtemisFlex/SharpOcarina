@@ -20053,17 +20053,41 @@ namespace SharpOcarina
 
             CurrentScene = LoadZsceneData(data, sceneid);
 
+            if (CurrentScene == null)
+            {
+                NowLoading = false;
+                MessageBox.Show("The selected ROM scene could not be decoded.", "Scene Load", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
             NormalHeader = CurrentScene;
 
-            RoomList.DisplayMember = "ModelShortFilename";
             RoomList.DataSource = null;
             RoomList.DataSource = CurrentScene.Rooms;
+            RoomList.DisplayMember = "ModelShortFilename";
 
-            if (CurrentScene.Rooms == null || CurrentScene.Rooms.Count == 0 || RoomList.Items.Count == 0)
+            // Some ROM imports arrive while the legacy ListBox binding context is
+            // still attached to the scene created during reset. Rebind through a
+            // fresh BindingSource so parsed rooms become selectable immediately.
+            if (CurrentScene.Rooms != null && CurrentScene.Rooms.Count > 0 && RoomList.Items.Count == 0)
+            {
+                RoomList.DataSource = new BindingSource { DataSource = CurrentScene.Rooms };
+                RoomList.DisplayMember = "ModelShortFilename";
+            }
+
+            if (CurrentScene.Rooms == null || CurrentScene.Rooms.Count == 0)
             {
                 NowLoading = false;
                 UpdateForm();
                 MessageBox.Show("This scene contains no readable rooms.", "Scene Load", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            if (RoomList.Items.Count == 0)
+            {
+                NowLoading = false;
+                UpdateForm();
+                MessageBox.Show("The ROM scene decoded rooms, but the room list could not be populated.", "Scene Load", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 
