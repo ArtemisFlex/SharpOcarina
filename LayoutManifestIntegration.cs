@@ -41,9 +41,11 @@ namespace SharpOcarina
                 try
                 {
                     int imported = LayoutManifestImporter.Apply(dialog.FileName, CurrentScene);
-                    if (CurrentScene.Rooms.Count > 0)
+                    if (CurrentScene.Rooms.Count > 0 && RoomList.Items.Count > 0)
                     {
-                        if (RoomList.SelectedIndex < 0) RoomList.SelectedIndex = 0;
+                        if (RoomList.SelectedIndex < 0 || RoomList.SelectedIndex >= RoomList.Items.Count ||
+                            RoomList.SelectedIndex >= CurrentScene.Rooms.Count)
+                            RoomList.SelectedIndex = 0;
                         actorEditControl.SetActors(ref CurrentScene.Rooms[RoomList.SelectedIndex].ZActors);
                     }
                     glControl1.Invalidate();

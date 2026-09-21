@@ -6351,9 +6351,12 @@ namespace SharpOcarina
 
                     RefreshExitLabels();
 
-                    if (CurrentScene.Rooms.Count > 0)
+                    // The scene model can be populated one message before the bound ListBox.
+                    // Do not index room data until the control has a matching item.
+                    if (CurrentScene.Rooms.Count > 0 && RoomList.Items.Count > 0)
                     {
-                        if (RoomList.SelectedIndex == -1)
+                        if (RoomList.SelectedIndex < 0 || RoomList.SelectedIndex >= RoomList.Items.Count ||
+                            RoomList.SelectedIndex >= CurrentScene.Rooms.Count)
                         {
                             RoomList.SelectedIndex = 0;
                         }
@@ -8667,7 +8670,8 @@ namespace SharpOcarina
         private void SelectRoom(int Index)
         {
             if (CurrentScene == null || RoomList == null || CurrentScene.Rooms == null ||
-                Index < 0 || Index >= CurrentScene.Rooms.Count)
+                RoomList.Items.Count == 0 || Index < 0 || Index >= CurrentScene.Rooms.Count ||
+                Index >= RoomList.Items.Count)
             {
                 GroupList.DataSource = null;
                 return;
@@ -20051,11 +20055,11 @@ namespace SharpOcarina
 
             NormalHeader = CurrentScene;
 
+            RoomList.DisplayMember = "ModelShortFilename";
             RoomList.DataSource = null;
             RoomList.DataSource = CurrentScene.Rooms;
-            RoomList.DisplayMember = "ModelShortFilename";
 
-            if (CurrentScene.Rooms == null || CurrentScene.Rooms.Count == 0)
+            if (CurrentScene.Rooms == null || CurrentScene.Rooms.Count == 0 || RoomList.Items.Count == 0)
             {
                 NowLoading = false;
                 UpdateForm();
@@ -20063,9 +20067,18 @@ namespace SharpOcarina
                 return;
             }
 
-            if (RoomList.SelectedIndex < 0 || RoomList.SelectedIndex >= CurrentScene.Rooms.Count)
+            if (RoomList.SelectedIndex < 0 || RoomList.SelectedIndex >= RoomList.Items.Count ||
+                RoomList.SelectedIndex >= CurrentScene.Rooms.Count)
             {
                 RoomList.SelectedIndex = 0;
+            }
+
+            if (RoomList.SelectedIndex < 0 || RoomList.SelectedIndex >= CurrentScene.Rooms.Count)
+            {
+                NowLoading = false;
+                UpdateForm();
+                MessageBox.Show("The scene rooms loaded, but the room list could not be selected.", "Scene Load", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
             }
 
             while (CurrentScene.SegmentFunctions.Count < 8)
