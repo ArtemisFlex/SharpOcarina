@@ -23,10 +23,17 @@ namespace SharpOcarina
         private readonly TextBox maxZ = new TextBox();
         private readonly TextBox polytype = new TextBox();
         private readonly CheckBox collision = new CheckBox();
+        private readonly int editingIndex;
 
         public RoomGeometryEditor(MainForm owner)
+            : this(owner, -1)
+        {
+        }
+
+        public RoomGeometryEditor(MainForm owner, int editingIndex)
         {
             this.owner = owner;
+            this.editingIndex = editingIndex;
             Text = "Room Geometry Authoring";
             FormBorderStyle = FormBorderStyle.FixedDialog;
             MaximizeBox = false;
@@ -47,6 +54,28 @@ namespace SharpOcarina
             collision.Text = "Add matching collision geometry";
             collision.Checked = true;
             texture.Text = "Optional texture path (relative to the room model)";
+
+            ZScene.ZRoom.RoomAuthoringPrimitive saved = editingIndex >= 0
+                ? owner.GetSelectedRoomAuthoringPrimitive(editingIndex)
+                : null;
+            if (saved != null)
+            {
+                type.SelectedIndex = Math.Max(0, Math.Min(type.Items.Count - 1, saved.Type));
+                name.Text = saved.Name;
+                material.Text = saved.MaterialName;
+                faceMaterials.Text = saved.FaceMaterials == null || saved.FaceMaterials.Count == 0
+                    ? "Optional: floor;wall;roof (one per face)"
+                    : string.Join(";", saved.FaceMaterials);
+                texture.Text = string.IsNullOrEmpty(saved.TexturePath) ? "Optional texture path (relative to the room model)" : saved.TexturePath;
+                minX.Text = saved.MinX.ToString(CultureInfo.InvariantCulture);
+                minY.Text = saved.MinY.ToString(CultureInfo.InvariantCulture);
+                minZ.Text = saved.MinZ.ToString(CultureInfo.InvariantCulture);
+                maxX.Text = saved.MaxX.ToString(CultureInfo.InvariantCulture);
+                maxY.Text = saved.MaxY.ToString(CultureInfo.InvariantCulture);
+                maxZ.Text = saved.MaxZ.ToString(CultureInfo.InvariantCulture);
+                polytype.Text = saved.CollisionPolyType.ToString(CultureInfo.InvariantCulture);
+                collision.Checked = saved.AddToCollision;
+            }
 
             TableLayoutPanel table = new TableLayoutPanel
             {
@@ -80,7 +109,7 @@ namespace SharpOcarina
             table.SetColumnSpan(hint, 2);
 
             FlowLayoutPanel buttons = new FlowLayoutPanel { Dock = DockStyle.Fill, FlowDirection = FlowDirection.RightToLeft };
-            Button add = new Button { Text = "Add to Room", AutoSize = true };
+            Button add = new Button { Text = editingIndex >= 0 ? "Update Room" : "Add to Room", AutoSize = true };
             Button cancel = new Button { Text = "Close", AutoSize = true, DialogResult = DialogResult.Cancel };
             add.Click += Add_Click;
             buttons.Controls.Add(add);
@@ -125,7 +154,10 @@ namespace SharpOcarina
                     AddToCollision = collision.Checked
                 };
 
-                owner.AppendRoomPrimitive(spec);
+                if (editingIndex >= 0)
+                    owner.UpdateRoomPrimitive(editingIndex, spec);
+                else
+                    owner.AppendRoomPrimitive(spec);
             }
             catch (Exception ex)
             {

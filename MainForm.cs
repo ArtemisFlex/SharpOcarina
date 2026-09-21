@@ -307,6 +307,8 @@ namespace SharpOcarina
         private Button authoringOpenLegacyButton;
         private Button authoringFrameButton;
         private Button authoringApplyPositionButton;
+        private Button authoringEditPrimitiveButton;
+        private Button authoringDeletePrimitiveButton;
         private NumericUpDown authoringPositionX;
         private NumericUpDown authoringPositionY;
         private NumericUpDown authoringPositionZ;
@@ -500,6 +502,67 @@ namespace SharpOcarina
             // Rebuild display lists after mutating the model. Texture loading is only
             // needed when this primitive introduced a new texture path.
             room.ObjModel.Prepare(!string.IsNullOrEmpty(spec.TexturePath), room.TrueGroups);
+            GroupList.DataSource = null;
+            GroupList.DataSource = room.TrueGroups;
+            Invalidate(true);
+        }
+
+        public void UpdateRoomPrimitive(int primitiveIndex, RoomPrimitiveSpec spec)
+        {
+            if (CurrentScene == null || RoomList.SelectedIndex < 0 || RoomList.SelectedIndex >= CurrentScene.Rooms.Count || spec == null)
+                return;
+            ZScene.ZRoom room = CurrentScene.Rooms[RoomList.SelectedIndex];
+            if (room.AuthoringPrimitives == null || primitiveIndex < 0 || primitiveIndex >= room.AuthoringPrimitives.Count)
+                return;
+
+            List<string> previousNames = room.AuthoringPrimitives
+                .Where(primitive => primitive != null && !string.IsNullOrEmpty(primitive.Name))
+                .Select(primitive => primitive.Name)
+                .ToList();
+            room.AuthoringPrimitives[primitiveIndex] = new ZScene.ZRoom.RoomAuthoringPrimitive(spec);
+            RebuildRoomAuthoringGeometry(room, previousNames);
+            authoringTreeDirty = true;
+            UpdateForm();
+        }
+
+        internal ZScene.ZRoom.RoomAuthoringPrimitive GetSelectedRoomAuthoringPrimitive(int primitiveIndex)
+        {
+            if (CurrentScene == null || RoomList == null || RoomList.SelectedIndex < 0 ||
+                RoomList.SelectedIndex >= CurrentScene.Rooms.Count || primitiveIndex < 0)
+                return null;
+            ZScene.ZRoom room = CurrentScene.Rooms[RoomList.SelectedIndex];
+            return room.AuthoringPrimitives != null && primitiveIndex < room.AuthoringPrimitives.Count
+                ? room.AuthoringPrimitives[primitiveIndex]
+                : null;
+        }
+
+        private void RebuildRoomAuthoringGeometry(ZScene.ZRoom room, IEnumerable<string> previousNames = null)
+        {
+            if (room == null || room.ObjModel == null) return;
+            if (room.AuthoringPrimitives == null) room.AuthoringPrimitives = new List<ZScene.ZRoom.RoomAuthoringPrimitive>();
+
+            HashSet<string> authoredNames = new HashSet<string>(StringComparer.Ordinal);
+            if (previousNames != null)
+                foreach (string previousName in previousNames)
+                    if (!string.IsNullOrEmpty(previousName)) authoredNames.Add(previousName);
+            foreach (ZScene.ZRoom.RoomAuthoringPrimitive primitive in room.AuthoringPrimitives)
+                if (primitive != null && !string.IsNullOrEmpty(primitive.Name)) authoredNames.Add(primitive.Name);
+
+            room.ObjModel.Groups.RemoveAll(group => authoredNames.Contains(group.Name));
+            if (CurrentScene.ColModel != null)
+                CurrentScene.ColModel.Groups.RemoveAll(group =>
+                    group.Name.EndsWith("_Collision", StringComparison.Ordinal) &&
+                    authoredNames.Contains(group.Name.Substring(0, group.Name.Length - "_Collision".Length)));
+
+            foreach (ZScene.ZRoom.RoomAuthoringPrimitive primitive in room.AuthoringPrimitives)
+                if (primitive != null) RoomGeometryBuilder.Append(room.ObjModel, CurrentScene.ColModel, primitive.ToSpec());
+
+            room.AuthoringPrimitivesApplied = true;
+            CurrentScene.PregeneratedMesh = false;
+            room.TrueGroups = room.ObjModel.Groups;
+            room.ObjModel.BasePath = CurrentScene.BasePath;
+            room.ObjModel.Prepare(true, room.TrueGroups);
+            if (CurrentScene.ColModel != null) CurrentScene.ColModel.BasePath = CurrentScene.BasePath;
             GroupList.DataSource = null;
             GroupList.DataSource = room.TrueGroups;
             Invalidate(true);
@@ -855,6 +918,24 @@ namespace SharpOcarina
                 UseVisualStyleBackColor = true
             };
             authoringApplyPositionButton.Click += delegate { ApplyAuthoringPosition(); };
+            authoringEditPrimitiveButton = new Button
+            {
+                Text = "Edit authored geometry...",
+                Dock = DockStyle.Top,
+                Height = 28,
+                Visible = false,
+                UseVisualStyleBackColor = true
+            };
+            authoringEditPrimitiveButton.Click += delegate { EditAuthoringPrimitive(); };
+            authoringDeletePrimitiveButton = new Button
+            {
+                Text = "Delete authored geometry",
+                Dock = DockStyle.Top,
+                Height = 28,
+                Visible = false,
+                UseVisualStyleBackColor = true
+            };
+            authoringDeletePrimitiveButton.Click += delegate { DeleteAuthoringPrimitive(); };
 
             FlowLayoutPanel positionRow = new FlowLayoutPanel
             {
@@ -898,6 +979,8 @@ namespace SharpOcarina
             panel.Controls.Add(authoringOpenLegacyButton);
             panel.Controls.Add(authoringFrameButton);
             panel.Controls.Add(authoringApplyPositionButton);
+            panel.Controls.Add(authoringDeletePrimitiveButton);
+            panel.Controls.Add(authoringEditPrimitiveButton);
             panel.Controls.Add(rotationRow);
             panel.Controls.Add(positionRow);
             panel.Controls.Add(authoringSelectionLabel);
@@ -1382,7 +1465,40 @@ namespace SharpOcarina
             authoringDeletePathPointButton.Visible = pointSelected;
             authoringOpenLegacyButton.Visible = CanOpenAuthoringSelectionInLegacyEditor();
             authoringFrameButton.Enabled = TryGetAuthoringSelectionPosition(out _);
+            bool primitiveSelected = CurrentScene != null && authoringSelection != null && authoringSelection.Kind == "Primitive" &&
+                authoringSelection.RoomIndex >= 0 && authoringSelection.RoomIndex < CurrentScene.Rooms.Count &&
+                authoringSelection.ItemIndex >= 0 && authoringSelection.ItemIndex < CurrentScene.Rooms[authoringSelection.RoomIndex].AuthoringPrimitives.Count;
+            authoringEditPrimitiveButton.Visible = primitiveSelected;
+            authoringDeletePrimitiveButton.Visible = primitiveSelected;
             UpdateAuthoringPositionControls();
+        }
+
+        private void EditAuthoringPrimitive()
+        {
+            if (authoringSelection == null || authoringSelection.Kind != "Primitive" || CurrentScene == null ||
+                authoringSelection.RoomIndex < 0 || authoringSelection.RoomIndex >= CurrentScene.Rooms.Count ||
+                authoringSelection.ItemIndex < 0 || authoringSelection.ItemIndex >= CurrentScene.Rooms[authoringSelection.RoomIndex].AuthoringPrimitives.Count)
+                return;
+            RoomList.SelectedIndex = authoringSelection.RoomIndex;
+            using (RoomGeometryEditor editor = new RoomGeometryEditor(this, authoringSelection.ItemIndex))
+                editor.ShowDialog(this);
+        }
+
+        private void DeleteAuthoringPrimitive()
+        {
+            if (authoringSelection == null || authoringSelection.Kind != "Primitive" || CurrentScene == null ||
+                authoringSelection.RoomIndex < 0 || authoringSelection.RoomIndex >= CurrentScene.Rooms.Count ||
+                authoringSelection.ItemIndex < 0 || authoringSelection.ItemIndex >= CurrentScene.Rooms[authoringSelection.RoomIndex].AuthoringPrimitives.Count)
+                return;
+            ZScene.ZRoom room = CurrentScene.Rooms[authoringSelection.RoomIndex];
+            if (MessageBox.Show(this, "Delete the selected authored geometry?", "Room geometry", MessageBoxButtons.OKCancel, MessageBoxIcon.Warning) != DialogResult.OK)
+                return;
+            room.AuthoringPrimitives.RemoveAt(authoringSelection.ItemIndex);
+            RoomList.SelectedIndex = authoringSelection.RoomIndex;
+            RebuildRoomAuthoringGeometry(room);
+            authoringSelection = null;
+            authoringTreeDirty = true;
+            UpdateForm();
         }
 
         private void AssignAuthoringActorPath()
@@ -1568,6 +1684,20 @@ namespace SharpOcarina
                     if (string.IsNullOrEmpty(filter) || group.Name.ToLowerInvariant().Contains(filter))
                         geometry.Nodes.Add(new TreeNode(group.Name) { Tag = new AuthoringSelection("Group", roomIndex, geometry.Nodes.Count, group) });
                 if (geometry.Nodes.Count > 0 || string.IsNullOrEmpty(filter)) roomNode.Nodes.Add(geometry);
+            }
+
+            if (room.AuthoringPrimitives != null && room.AuthoringPrimitives.Count > 0)
+            {
+                TreeNode authored = new TreeNode("Authored geometry");
+                for (int i = 0; i < room.AuthoringPrimitives.Count; i++)
+                {
+                    ZScene.ZRoom.RoomAuthoringPrimitive primitive = room.AuthoringPrimitives[i];
+                    if (primitive == null) continue;
+                    string text = "Primitive " + i + "  " + primitive.Name + "  " + ((RoomPrimitiveType)primitive.Type).ToString();
+                    if (string.IsNullOrEmpty(filter) || text.ToLowerInvariant().Contains(filter))
+                        authored.Nodes.Add(new TreeNode(text) { Tag = new AuthoringSelection("Primitive", roomIndex, i, primitive) });
+                }
+                if (authored.Nodes.Count > 0 || string.IsNullOrEmpty(filter)) roomNode.Nodes.Add(authored);
             }
         }
 
