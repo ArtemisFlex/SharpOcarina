@@ -2693,6 +2693,15 @@ namespace SharpOcarina
             ushort ActorID = !MainForm.settings.MajorasMask ? Actor.Number : (ushort)(Actor.Number & 0x0FFF);
             int render = FindActorRender((ushort)((ActorID == 0 && settings.RenderChildLink) ? 0xFFFF : ActorID), Actor.Variable);
             if (render < 0 || render >= zobj_cache.Count)
+            {
+                // Some stock enemies are effect-only actors or lack a usable display-list
+                // preview. Keep them visible and selectable with the existing editor marker.
+                ActorInfo info;
+                if (ActorCache.TryGetValue(Actor.Number, out info) && (info.category == 5 || info.category == 9))
+                    DrawActorModel(Actor, info.category == 9 ? Color.DarkRed : Color.OrangeRed,
+                        info.category == 9 ? BossGLID : EnemyGLID, false, DrawBorder);
+                return;
+            }
                 return;
             float animroty = (render != -1) ? zobj_cache[render].RotY * globalframe : 0.0f;
             float scale = 0.1f;
@@ -19071,6 +19080,7 @@ namespace SharpOcarina
                     string name = "";
                     string objects = "";
                     ushort id = 0;
+                    int category = 0;
 
                     XmlAttributeCollection nodeAtt = node.Attributes;
 
@@ -19112,12 +19122,13 @@ namespace SharpOcarina
 
                     if (nodeAtt["Name"] != null) name = nodeAtt["Name"].Value;
                     if (nodeAtt["Object"] != null) objects = nodeAtt["Object"].Value;
+                    if (nodeAtt["Category"] != null) int.TryParse(nodeAtt["Category"].Value, out category);
                     id = Convert.ToUInt16(nodeAtt["Key"].Value, 16);
 
                     properties = XMLreader.getActorProperties(nodeAtt["Key"].Value);
 
        
-                    ActorCache.Add(id, new ActorInfo(name, properties, objects));
+                    ActorCache.Add(id, new ActorInfo(name, properties, objects, category));
 
                     //test += "[0x" + id.ToString("X4") + "] = " + '"' + name + '"' + ",\n";
 
@@ -25243,17 +25254,19 @@ namespace SharpOcarina
         public string name = "";
         public List<ActorProperty> actorproperties = new List<ActorProperty>();
         public string objects = "";
+        public int category = 0;
         public sbyte NoMMYRot = 0;
        
         public ActorProperty switchFlag = null;
         public ActorProperty collectibleFlag = null;
         public ActorProperty chestFlag = null;
         public ActorProperty pathwayID = null;
-        public ActorInfo(string _name, List<ActorProperty> _actorproperties, string _objects)
+        public ActorInfo(string _name, List<ActorProperty> _actorproperties, string _objects, int _category = 0)
         {
             name = _name;
             actorproperties = _actorproperties;
             objects = _objects;
+            category = _category;
 
             foreach (ActorProperty property in _actorproperties)
             {
