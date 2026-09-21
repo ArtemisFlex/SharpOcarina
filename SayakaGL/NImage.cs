@@ -27,29 +27,27 @@ namespace NImage
 
             for (int j = 0; j < Height; j++)
             {
+                uint RowOffset = SourceOffset + (LineSize * 8 * (uint)j);
                 for (int i = 0; i < Width; i++)
                 {
-                    if (SourceOffset + 1 >= Source.Length) break;
+                    uint PixelOffset = RowOffset + ((uint)i * 2);
+                    if (PixelOffset + 1 >= Source.Length) break;
 
-                    UInt16 Raw = (UInt16)((Source[SourceOffset] << 8) | Source[SourceOffset + 1]);
+                    UInt16 Raw = (UInt16)((Source[PixelOffset] << 8) | Source[PixelOffset + 1]);
                     Target[TargetOffset] = (byte)((Raw & 0xF800) >> 8);
                     Target[TargetOffset + 1] = (byte)(((Raw & 0x07C0) << 5) >> 8);
                     Target[TargetOffset + 2] = (byte)(((Raw & 0x003E) << 18) >> 16);
                     Target[TargetOffset + 3] = 0;
                     if ((Raw & 0x0001) == 1) Target[TargetOffset + 3] = 0xFF;
 
-                    SourceOffset += 2;
                     TargetOffset += 4;
-
-                    
                 }
-                SourceOffset += LineSize * 4 - Width;
             }
         }
 
         public static void RGBA32(byte[] Source, uint SourceOffset, ref byte[] Target)
         {
-            Buffer.BlockCopy(Source, (int)SourceOffset, Target, 0, (int)Target.Length);
+            Buffer.BlockCopy(Source, (int)SourceOffset, Target, 0, Math.Min(Target.Length, Source.Length - (int)SourceOffset));
         }
 
         #endregion
@@ -174,19 +172,18 @@ namespace NImage
 
             for (int j = 0; j < Height; j++)
             {
+                uint RowOffset = SourceOffset + ((uint)LineSize * 8 * (uint)j);
                 for (int i = 0; i < Width; i++)
                 {
-                    Target[TargetOffset] = Source[SourceOffset];
-                    Target[TargetOffset + 1] = Source[SourceOffset];
-                    Target[TargetOffset + 2] = Source[SourceOffset];
-                    Target[TargetOffset + 3] = Source[SourceOffset + 1];
+                    uint PixelOffset = RowOffset + ((uint)i * 2);
+                    if (PixelOffset + 1 >= Source.Length) break;
+                    Target[TargetOffset] = Source[PixelOffset];
+                    Target[TargetOffset + 1] = Source[PixelOffset];
+                    Target[TargetOffset + 2] = Source[PixelOffset];
+                    Target[TargetOffset + 3] = Source[PixelOffset + 1];
 
-                    SourceOffset += 2;
                     TargetOffset += 4;
-
-                    if (SourceOffset >= Source.Length) break;
                 }
-                SourceOffset += (uint)(LineSize * 4) - Width;
             }
         }
 
