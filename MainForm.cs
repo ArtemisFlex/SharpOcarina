@@ -320,6 +320,7 @@ namespace SharpOcarina
         private int authoringTreeRoom = -1;
         private SplitContainer authoringShellSplit;
         private SplitContainer authoringCenterDetailsSplit;
+        private bool authoringDefaultsApplied;
         private ComboBox authoringRoomSelector;
         private bool updatingAuthoringRoomSelector;
         private bool updatingForm;
@@ -559,14 +560,14 @@ namespace SharpOcarina
             {
                 Dock = DockStyle.Fill,
                 Orientation = Orientation.Vertical,
-                SplitterDistance = 220,
+                SplitterDistance = 290,
                 IsSplitterFixed = false
             };
             authoringCenterDetailsSplit = new SplitContainer
             {
                 Dock = DockStyle.Fill,
                 Orientation = Orientation.Vertical,
-                SplitterDistance = 760,
+                SplitterDistance = 600,
                 IsSplitterFixed = false
             };
 
@@ -637,6 +638,36 @@ namespace SharpOcarina
             authoringShellSplit.BringToFront();
             menuStrip1.BringToFront();
             memoryBudgetPanel.BringToFront();
+            Shown += delegate { ApplyDefaultAuthoringSplitters(); };
+        }
+
+        private void ApplyDefaultAuthoringSplitters()
+        {
+            if (authoringDefaultsApplied || authoringShellSplit == null || authoringCenterDetailsSplit == null)
+                return;
+
+            int shellWidth = authoringShellSplit.ClientSize.Width;
+            int centerWidth = authoringCenterDetailsSplit.ClientSize.Width;
+            if (shellWidth <= 0 || centerWidth <= 0)
+                return;
+
+            // Match the viewport-first workspace: a compact drawer, a wide viewport,
+            // and a details panel that still leaves its transform controls readable.
+            int drawerWidth = Math.Max(280, Math.Min(320, (int)(shellWidth * 0.16f)));
+            int detailsWidth = Math.Max(300, Math.Min(350, (int)(centerWidth * 0.20f)));
+
+            int maxDrawerWidth = shellWidth - 360;
+            if (maxDrawerWidth < 200)
+                return;
+            authoringShellSplit.SplitterDistance = Math.Min(drawerWidth, maxDrawerWidth);
+
+            int centerAvailable = centerWidth - authoringCenterDetailsSplit.SplitterWidth;
+            int viewportWidth = centerAvailable - detailsWidth;
+            int maxViewportWidth = centerWidth - authoringCenterDetailsSplit.SplitterWidth - 1;
+            if (viewportWidth < 360 || maxViewportWidth < 360)
+                return;
+            authoringCenterDetailsSplit.SplitterDistance = Math.Min(viewportWidth, maxViewportWidth);
+            authoringDefaultsApplied = true;
         }
 
         private static Button CreateViewportToggle(string text, EventHandler handler)
