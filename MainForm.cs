@@ -321,6 +321,8 @@ namespace SharpOcarina
         private SplitContainer authoringShellSplit;
         private SplitContainer authoringCenterDetailsSplit;
         private bool authoringDefaultsApplied;
+        private Panel authoringViewportHost;
+        private Button authoringLegacyEditorsToggle;
         private ComboBox authoringRoomSelector;
         private bool updatingAuthoringRoomSelector;
         private bool updatingForm;
@@ -576,7 +578,7 @@ namespace SharpOcarina
             Controls.Remove(tabControl1);
             glControl1.Dock = DockStyle.Fill;
             tabControl1.Dock = DockStyle.Fill;
-            Panel viewportHost = new Panel { Dock = DockStyle.Fill, Padding = new Padding(0, 28, 0, 0) };
+            authoringViewportHost = new Panel { Dock = DockStyle.Fill, Padding = new Padding(0, 28, 0, 0) };
             Panel viewportToolbar = new Panel
             {
                 Dock = DockStyle.Top,
@@ -587,7 +589,7 @@ namespace SharpOcarina
             FlowLayoutPanel viewportCommands = new FlowLayoutPanel
             {
                 Dock = DockStyle.Left,
-                Width = 420,
+                Width = 540,
                 Height = 28,
                 FlowDirection = FlowDirection.LeftToRight,
                 WrapContents = false,
@@ -606,6 +608,10 @@ namespace SharpOcarina
                 authoringShellSplit.Panel1Collapsed = !restorePanels;
                 authoringCenterDetailsSplit.Panel2Collapsed = !restorePanels;
             });
+            authoringLegacyEditorsToggle = CreateViewportToggle("Classic editors", delegate
+            {
+                ShowClassicEditors(!tabControl1.Visible);
+            });
             Label roomLabel = new Label { Text = "Room", AutoSize = true, Padding = new Padding(4, 4, 0, 0) };
             authoringRoomSelector = new ComboBox
             {
@@ -619,6 +625,7 @@ namespace SharpOcarina
             viewportCommands.Controls.Add(detailsToggle);
             viewportCommands.Controls.Add(refreshAuthoring);
             viewportCommands.Controls.Add(focusViewport);
+            viewportCommands.Controls.Add(authoringLegacyEditorsToggle);
             viewportCommands.Controls.Add(roomLabel);
             viewportCommands.Controls.Add(authoringRoomSelector);
             viewportToolbar.Controls.Add(viewportCommands);
@@ -629,9 +636,12 @@ namespace SharpOcarina
             {
                 memoryBudgetPanel.Location = new Point(viewportToolbar.ClientSize.Width - memoryBudgetPanel.Width - 4, 2);
             };
-            viewportHost.Controls.Add(glControl1);
-            viewportHost.Controls.Add(viewportToolbar);
-            authoringCenterDetailsSplit.Panel1.Controls.Add(viewportHost);
+            authoringViewportHost.Controls.Add(glControl1);
+            tabControl1.Dock = DockStyle.Fill;
+            tabControl1.Visible = false;
+            authoringViewportHost.Controls.Add(tabControl1);
+            authoringViewportHost.Controls.Add(viewportToolbar);
+            authoringCenterDetailsSplit.Panel1.Controls.Add(authoringViewportHost);
             authoringCenterDetailsSplit.Panel2.Controls.Add(CreateAuthoringDetailsPanel());
             authoringShellSplit.Panel1.Controls.Add(CreateAuthoringDrawer());
             authoringShellSplit.Panel2.Controls.Add(authoringCenterDetailsSplit);
@@ -640,6 +650,21 @@ namespace SharpOcarina
             menuStrip1.BringToFront();
             memoryBudgetPanel.BringToFront();
             Shown += delegate { ApplyDefaultAuthoringSplitters(); };
+        }
+
+        private void ShowClassicEditors(bool show)
+        {
+            if (tabControl1 == null || glControl1 == null)
+                return;
+
+            tabControl1.Visible = show;
+            glControl1.Visible = !show;
+            if (authoringLegacyEditorsToggle != null)
+                authoringLegacyEditorsToggle.Text = show ? "Viewport" : "Classic editors";
+            if (show)
+                tabControl1.BringToFront();
+            else
+                glControl1.BringToFront();
         }
 
         private void ApplyDefaultAuthoringSplitters()
@@ -1135,7 +1160,10 @@ namespace SharpOcarina
         private void SelectExistingAuthoringTab(string tabName)
         {
             if (tabControl1 != null && tabControl1.TabPages.ContainsKey(tabName))
+            {
+                ShowClassicEditors(true);
                 tabControl1.SelectedTab = tabControl1.TabPages[tabName];
+            }
         }
 
         private void AuthoringContentTree_AfterSelect(object sender, TreeViewEventArgs e)
