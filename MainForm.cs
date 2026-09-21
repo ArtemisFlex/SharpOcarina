@@ -614,6 +614,10 @@ namespace SharpOcarina
             {
                 ShowClassicEditors(!tabControl1.Visible);
             });
+            Button authoringPathsButton = CreateViewportToggle("Paths", delegate
+            {
+                SelectExistingAuthoringTab("tabPathways");
+            });
             Label roomLabel = new Label { Text = "Room", AutoSize = true, Padding = new Padding(4, 4, 0, 0) };
             authoringRoomSelector = new ComboBox
             {
@@ -628,6 +632,7 @@ namespace SharpOcarina
             viewportCommands.Controls.Add(refreshAuthoring);
             viewportCommands.Controls.Add(focusViewport);
             viewportCommands.Controls.Add(authoringLegacyEditorsToggle);
+            viewportCommands.Controls.Add(authoringPathsButton);
             viewportCommands.Controls.Add(roomLabel);
             viewportCommands.Controls.Add(authoringRoomSelector);
             viewportToolbar.Controls.Add(viewportCommands);
@@ -951,6 +956,7 @@ namespace SharpOcarina
                 case "Path":
                 case "PathPoint":
                     actorpick = _Pathway_;
+                    ShowClassicEditors(true);
                     tabControl1.SelectedTab = tabPathways;
                     PathwayNumber.Value = authoringSelection.ItemIndex;
                     UpdatePathwayEdit();
@@ -1194,6 +1200,7 @@ namespace SharpOcarina
             else if (selection.Kind == "Path" || selection.Kind == "PathPoint")
             {
                 actorpick = _Pathway_;
+                ShowClassicEditors(true);
                 tabControl1.SelectedTab = tabPathways;
                 PathwayNumber.Value = selection.ItemIndex;
                 UpdatePathwayEdit();

@@ -8719,7 +8719,7 @@ namespace SharpOcarina
             this.tabPathways.Padding = new System.Windows.Forms.Padding(3);
             this.tabPathways.Size = new System.Drawing.Size(411, 676);
             this.tabPathways.TabIndex = 6;
-            this.tabPathways.Text = "Pathways";
+            this.tabPathways.Text = "Paths / patrols";
             this.tabPathways.UseVisualStyleBackColor = true;
             // 
             // ActorCutsceneGroupBox
