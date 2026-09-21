@@ -324,6 +324,7 @@ namespace SharpOcarina
         private ComboBox authoringRoomSelector;
         private bool updatingAuthoringRoomSelector;
         private bool updatingForm;
+        private bool updatingObjectEdit;
         private bool manualRoomListItems;
 
         private sealed class AuthoringSelection
@@ -10524,6 +10525,22 @@ namespace SharpOcarina
 
         private void UpdateObjectEdit()
         {
+            if (updatingObjectEdit)
+                return;
+
+            updatingObjectEdit = true;
+            try
+            {
+                UpdateObjectEditCore();
+            }
+            finally
+            {
+                updatingObjectEdit = false;
+            }
+        }
+
+        private void UpdateObjectEditCore()
+        {
             if (CurrentScene == null || CurrentScene.Rooms == null || RoomList == null ||
                 RoomObjectListBox == null || SceneObjectListBox == null ||
                 RoomList.SelectedIndex < 0 || RoomList.SelectedIndex >= CurrentScene.Rooms.Count ||
@@ -10607,6 +10624,13 @@ namespace SharpOcarina
 
         private void RefreshRoomObjectDescription()
         {
+            if (RoomObjectDescription == null || CurrentScene == null || CurrentScene.Rooms == null ||
+                RoomList == null || RoomObjectListBox == null ||
+                RoomList.SelectedIndex < 0 || RoomList.SelectedIndex >= CurrentScene.Rooms.Count ||
+                CurrentScene.Rooms[RoomList.SelectedIndex] == null ||
+                CurrentScene.Rooms[RoomList.SelectedIndex].ZObjects == null)
+                return;
+
             RoomObjectDescription.Text = "";
             if (RoomObjectListBox.SelectedIndex > -1 && RoomObjectListBox.SelectedIndex < CurrentScene.Rooms[RoomList.SelectedIndex].ZObjects.Count)
             {
@@ -10630,6 +10654,10 @@ namespace SharpOcarina
 
         private void RefreshSceneObjectDescription()
         {
+            if (SceneObjectDescription == null || CurrentScene == null || SceneObjectListBox == null ||
+                CurrentScene.ZObjects == null)
+                return;
+
             SceneObjectDescription.Text = "";
             if (SceneObjectListBox.SelectedIndex > -1 && SceneObjectListBox.SelectedIndex < CurrentScene.ZObjects.Count)
             {
