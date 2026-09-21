@@ -323,6 +323,7 @@ namespace SharpOcarina
         private ComboBox authoringRoomSelector;
         private bool updatingAuthoringRoomSelector;
         private bool updatingForm;
+        private bool manualRoomListItems;
 
         private sealed class AuthoringSelection
         {
@@ -519,6 +520,37 @@ namespace SharpOcarina
                 memoryRoomLabel, memorySceneLabel, memoryRomLabel,
                 memoryRoomProgress, memorySceneProgress, memoryRomProgress
             });
+        }
+
+        private void RefreshRoomListItems()
+        {
+            if (CurrentScene == null || CurrentScene.Rooms == null || RoomList == null) return;
+
+            int selected = RoomList.SelectedIndex;
+            RoomList.BeginUpdate();
+            try
+            {
+                RoomList.DataSource = null;
+                RoomList.DisplayMember = "ModelShortFilename";
+                RoomList.Items.Clear();
+                foreach (ZScene.ZRoom room in CurrentScene.Rooms)
+                    RoomList.Items.Add(room);
+
+                if (RoomList.Items.Count > 0)
+                    RoomList.SelectedIndex = Math.Max(0, Math.Min(selected, RoomList.Items.Count - 1));
+            }
+            finally
+            {
+                RoomList.EndUpdate();
+            }
+        }
+
+        private void RefreshRoomListView()
+        {
+            if (manualRoomListItems)
+                RefreshRoomListItems();
+            else
+                ((CurrencyManager)RoomList.BindingContext[CurrentScene.Rooms]).Refresh();
         }
 
         private void InitializeAuthoringWorkspace()
@@ -8909,6 +8941,7 @@ namespace SharpOcarina
             CurrentScene.PolyTypes.Add(new ZColPolyType(0x0000000000000000));
 
             /* Setup interface */
+            manualRoomListItems = false;
             RoomList.DataSource = CurrentScene.Rooms;
             RoomList.DisplayMember = "ModelShortFilename";
 
@@ -9952,6 +9985,7 @@ namespace SharpOcarina
 
             if (!CurrentScene.PregeneratedMesh && CurrentScene.Rooms.Count != 0) prevpoly = CurrentScene.Rooms[0].ObjModel.Groups[0].PolyType; //weird fix with polytypes
 
+            manualRoomListItems = false;
             RoomList.DataSource = CurrentScene.Rooms;
             RoomList.DisplayMember = "ModelShortFilename";
 
@@ -10148,7 +10182,7 @@ namespace SharpOcarina
                 if (CurrentScene.AutoCollision && CurrentScene.Rooms.Count == 0)
                     LoadCollision(openFileDialog1.FileName);
                 CurrentScene.AddRoom(openFileDialog1.FileName);
-                ((CurrencyManager)RoomList.BindingContext[CurrentScene.Rooms]).Refresh();
+                RefreshRoomListView();
                 CurrentScene.NewRoomMode = false;
                 savechanges = true;
 
@@ -10239,7 +10273,7 @@ namespace SharpOcarina
                     CurrentScene.Rooms.Remove(CurrentScene.Rooms[RoomList.SelectedIndex]);
                 else
                 { CurrentScene.Rooms.Clear(); CurrentScene.NewRoomMode = false; }
-                ((CurrencyManager)RoomList.BindingContext[CurrentScene.Rooms]).Refresh();
+                RefreshRoomListView();
 
                 if (NormalHeader.SceneHeaders.Count > 0) ResetAlternateRooms();
             }
@@ -10261,7 +10295,7 @@ namespace SharpOcarina
         private void listBox1_ApplyEdit(object sender, EventArgs e)
         {
             CurrentScene.Rooms[RoomList.SelectedIndex].ModelShortFilename = ListStringEditBox.Text;
-            ((CurrencyManager)RoomList.BindingContext[CurrentScene.Rooms]).Refresh();
+            RefreshRoomListView();
             CloseEditBox();
         }
 
@@ -13763,7 +13797,7 @@ namespace SharpOcarina
                         MessageBox.Show("Bad usage of #Room tag. The tag needs to be at the end of the group name or before another tag.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
 
                         CurrentScene.Rooms.Clear(); CurrentScene.NewRoomMode = false;
-                        ((CurrencyManager)RoomList.BindingContext[CurrentScene.Rooms]).Refresh();
+                        RefreshRoomListView();
                         if (NormalHeader.SceneHeaders.Count > 0) ResetAlternateRooms();
                         GroupList.DataSource = null;
                         UpdateForm();
@@ -13797,7 +13831,7 @@ namespace SharpOcarina
             }
 
 
-            ((CurrencyManager)RoomList.BindingContext[CurrentScene.Rooms]).Refresh();
+            RefreshRoomListView();
 
             if (NormalHeader.SceneHeaders.Count > 0) ResetAlternateRooms();
 
@@ -15314,7 +15348,7 @@ namespace SharpOcarina
                             CurrentScene.Rooms[r].ModelShortFilename = roomname + " (Room " + (r) + ")";
                     }
                 }
-                ((CurrencyManager)RoomList.BindingContext[CurrentScene.Rooms]).Refresh();
+                RefreshRoomListView();
 
                 if (CurrentScene.Rooms.Count > 0 && GroupList.Items.Count > 0)
                 {
@@ -20075,6 +20109,8 @@ namespace SharpOcarina
             NormalHeader = CurrentScene;
 
             RoomList.DataSource = null;
+            manualRoomListItems = false;
+            manualRoomListItems = false;
             RoomList.DataSource = CurrentScene.Rooms;
             RoomList.DisplayMember = "ModelShortFilename";
 
@@ -20083,8 +20119,8 @@ namespace SharpOcarina
             // fresh BindingSource so parsed rooms become selectable immediately.
             if (CurrentScene.Rooms != null && CurrentScene.Rooms.Count > 0 && RoomList.Items.Count == 0)
             {
-                RoomList.DataSource = new BindingSource { DataSource = CurrentScene.Rooms };
-                RoomList.DisplayMember = "ModelShortFilename";
+                manualRoomListItems = true;
+                RefreshRoomListItems();
             }
 
             if (CurrentScene.Rooms == null || CurrentScene.Rooms.Count == 0)
