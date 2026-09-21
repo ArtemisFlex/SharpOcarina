@@ -10558,13 +10558,6 @@ namespace SharpOcarina
             RoomObjectListBox.DisplayMember = "ValueHex";
             SceneObjectListBox.DataSource = CurrentScene.ZObjects ?? new List<ZScene.ZUShort>();
             SceneObjectListBox.DisplayMember = "ValueHex";
-            CurrencyManager roomObjectManager = RoomObjectListBox.BindingContext[roomObjects] as CurrencyManager;
-            if (roomObjectManager != null) roomObjectManager.Refresh();
-            if (CurrentScene.ZObjects != null)
-            {
-                CurrencyManager sceneObjects = SceneObjectListBox.BindingContext[CurrentScene.ZObjects] as CurrencyManager;
-                if (sceneObjects != null) sceneObjects.Refresh();
-            }
         }
 
         private void RoomObject_ApplyListEdit()
