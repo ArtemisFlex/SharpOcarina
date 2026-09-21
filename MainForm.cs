@@ -496,7 +496,7 @@ namespace SharpOcarina
             // rebuild path; the pregenerated path intentionally preserves old ROM bytes.
             CurrentScene.PregeneratedMesh = false;
             room.TrueGroups = room.ObjModel.Groups;
-            room.ObjModel.BasePath = CurrentScene.BasePath;
+            room.ObjModel.BasePath = ResolveRoomModelBasePath(room);
             CurrentScene.ColModel.BasePath = CurrentScene.BasePath;
 
             // Rebuild display lists after mutating the model. Texture loading is only
@@ -560,12 +560,28 @@ namespace SharpOcarina
             room.AuthoringPrimitivesApplied = true;
             CurrentScene.PregeneratedMesh = false;
             room.TrueGroups = room.ObjModel.Groups;
-            room.ObjModel.BasePath = CurrentScene.BasePath;
+            room.ObjModel.BasePath = ResolveRoomModelBasePath(room);
             room.ObjModel.Prepare(true, room.TrueGroups);
             if (CurrentScene.ColModel != null) CurrentScene.ColModel.BasePath = CurrentScene.BasePath;
             GroupList.DataSource = null;
             GroupList.DataSource = room.TrueGroups;
             Invalidate(true);
+        }
+
+        private string ResolveRoomModelBasePath(ZScene.ZRoom room)
+        {
+            if (room != null && !string.IsNullOrEmpty(room.ModelFilename))
+            {
+                string modelPath = room.ModelFilename;
+                if (!Path.IsPathRooted(modelPath))
+                    modelPath = Path.Combine(CurrentScene.BasePath ?? string.Empty, modelPath);
+                string modelDirectory = Path.GetDirectoryName(Path.GetFullPath(modelPath));
+                if (!string.IsNullOrEmpty(modelDirectory) && Directory.Exists(modelDirectory))
+                    return modelDirectory + Path.DirectorySeparatorChar;
+            }
+            if (room != null && room.ObjModel != null && !string.IsNullOrEmpty(room.ObjModel.BasePath))
+                return room.ObjModel.BasePath;
+            return CurrentScene.BasePath;
         }
 
         private void InitializeMemoryBudgetNotifier()
@@ -1077,8 +1093,10 @@ namespace SharpOcarina
             room.TrueGroups = room.ObjModel.Groups;
             room.AuthoringPrimitivesApplied = true;
             CurrentScene.PregeneratedMesh = false;
-            room.ObjModel.BasePath = CurrentScene.BasePath;
-            room.ObjModel.Prepare(true, room.TrueGroups);
+            room.ObjModel.BasePath = ResolveRoomModelBasePath(room);
+            // Splitting only changes group/vertex ownership; existing material
+            // images are already loaded, so avoid reopening every texture file.
+            room.ObjModel.Prepare(false, room.TrueGroups);
             GroupList.DataSource = null;
             GroupList.DataSource = room.TrueGroups;
             authoringSelection = null;
