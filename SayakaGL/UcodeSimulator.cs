@@ -1826,9 +1826,10 @@ namespace SharpOcarina.SayakaGL
             int textureDataSegment = (int)TextureSegment;
             bool textureAddressValid = GameHandler.IsAddressValid(NGraphics.Textures[ActiveTexture].Address);
 
-            // Some imported OoT room display lists retain 0x02 texture pointers even
-            // though the extracted texture bytes live in the room's 0x03 segment.
-            if (!textureAddressValid && TextureSegment == 0x02 && GameHandler.RAM[0x03].IsSet &&
+            // Room display lists can retain 0x02 texture pointers, but imported
+            // room bytes are loaded into the room's 0x03 segment. Prefer that
+            // segment for room texture offsets before accepting scene-segment data.
+            if (TextureSegment == 0x02 && GameHandler.RAM[0x03].IsSet &&
                 TextureOffset < GameHandler.RAM[0x03].Data.Length)
             {
                 textureDataSegment = 0x03;

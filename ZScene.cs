@@ -2203,6 +2203,11 @@ namespace SharpOcarina
             {
                 // Make a DList list for the UcodeSimulator for each
                 _Rooms[i].N64DLists = new List<SayakaGL.UcodeSimulator.DisplayListStruct>();
+                // Room segments are replaced on every iteration. Give each room
+                // its own cache namespace so reused N64 addresses cannot borrow
+                // a texture captured from a previous room.
+                SayakaGL.UcodeSimulator.currentfilename = "Room" + i.ToString();
+                SayakaGL.UcodeSimulator.TextureCache.Clear();
 
                 // Load the room data into dummy memory
 
