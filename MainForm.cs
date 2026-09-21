@@ -829,11 +829,16 @@ namespace SharpOcarina
             authoringSearchBox.TextChanged += delegate { authoringTreeDirty = true; UpdateAuthoringWorkspace(); };
             authoringContentTree = new TreeView { Dock = DockStyle.Fill, HideSelection = false, BorderStyle = BorderStyle.FixedSingle };
             authoringContentTree.AfterSelect += AuthoringContentTree_AfterSelect;
+            FlowLayoutPanel contentCommands = new FlowLayoutPanel { Dock = DockStyle.Top, Height = 34, WrapContents = false };
+            contentCommands.Controls.Add(CreateAuthoringTaskButton("Add geometry", delegate { OpenAuthoringGeometryEditor(); }));
+            contentCommands.Controls.Add(CreateAuthoringTaskButton("Make editable", delegate { SplitRoomGeometryIntoEditableGroups(); }));
             contentPage.Controls.Add(authoringContentTree);
+            contentPage.Controls.Add(contentCommands);
             contentPage.Controls.Add(authoringSearchBox);
 
             FlowLayoutPanel tasks = new FlowLayoutPanel { Dock = DockStyle.Fill, Padding = new Padding(8), FlowDirection = FlowDirection.TopDown, WrapContents = false, AutoScroll = true };
             tasks.Controls.Add(CreateAuthoringTaskButton("Add geometry", delegate { OpenAuthoringGeometryEditor(); }));
+            tasks.Controls.Add(CreateAuthoringTaskButton("Make room geometry editable", delegate { SplitRoomGeometryIntoEditableGroups(); }));
             tasks.Controls.Add(CreateAuthoringTaskButton("Browse assets", delegate { OpenAuthoringAssetBrowser(); }));
             tasks.Controls.Add(CreateAuthoringTaskButton("Scene settings", delegate { SelectExistingAuthoringTab("tabGeneral"); }));
             tasks.Controls.Add(CreateAuthoringTaskButton("Actors and NPCs", delegate { SelectExistingAuthoringTab("tabActors"); }));
@@ -1007,6 +1012,82 @@ namespace SharpOcarina
             using (RoomGeometryEditor editor = new RoomGeometryEditor(this)) editor.ShowDialog(this);
         }
 
+        private void SplitRoomGeometryIntoEditableGroups()
+        {
+            if (CurrentScene == null || RoomList == null || RoomList.SelectedIndex < 0 ||
+                RoomList.SelectedIndex >= CurrentScene.Rooms.Count)
+                return;
+
+            ZScene.ZRoom room = CurrentScene.Rooms[RoomList.SelectedIndex];
+            if (room == null || room.ObjModel == null || room.ObjModel.Groups == null || room.ObjModel.Groups.Count == 0)
+            {
+                MessageBox.Show(this, "The selected room has no imported geometry to separate.", "Room geometry", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+
+            if (MessageBox.Show(this,
+                "Split the imported room into independently selectable geometry groups by material? This preserves the original N64 material assignments and creates editable vertex copies.",
+                "Make room geometry editable", MessageBoxButtons.OKCancel, MessageBoxIcon.Question) != DialogResult.OK)
+                return;
+
+            List<ObjFile.Group> separated = new List<ObjFile.Group>();
+            int groupNumber = 0;
+            foreach (ObjFile.Group source in room.ObjModel.Groups.ToList())
+            {
+                IEnumerable<IGrouping<string, ObjFile.Triangle>> buckets = source.Triangles
+                    .GroupBy(triangle => triangle.MaterialName ?? string.Empty);
+                foreach (IGrouping<string, ObjFile.Triangle> bucket in buckets)
+                {
+                    ObjFile.Group target = source.Clone();
+                    target.Name = source.Name + "_editable_" + groupNumber++;
+                    target.Triangles = new List<ObjFile.Triangle>();
+                    Dictionary<int, int> vertexMap = new Dictionary<int, int>();
+
+                    foreach (ObjFile.Triangle sourceTriangle in bucket)
+                    {
+                        ObjFile.Triangle targetTriangle = new ObjFile.Triangle
+                        {
+                            MaterialName = sourceTriangle.MaterialName,
+                            VertIndex = new int[3],
+                            VertColor = sourceTriangle.VertColor == null ? null : (int[])sourceTriangle.VertColor.Clone(),
+                            TexCoordIndex = sourceTriangle.TexCoordIndex == null ? null : (int[])sourceTriangle.TexCoordIndex.Clone(),
+                            NormalIndex = sourceTriangle.NormalIndex == null ? null : (int[])sourceTriangle.NormalIndex.Clone()
+                        };
+
+                        for (int corner = 0; corner < sourceTriangle.VertIndex.Length && corner < 3; corner++)
+                        {
+                            int oldIndex = sourceTriangle.VertIndex[corner];
+                            int newIndex;
+                            if (!vertexMap.TryGetValue(oldIndex, out newIndex))
+                            {
+                                newIndex = room.ObjModel.Vertices.Count;
+                                room.ObjModel.Vertices.Add(room.ObjModel.Vertices[oldIndex].Clone());
+                                vertexMap.Add(oldIndex, newIndex);
+                            }
+                            targetTriangle.VertIndex[corner] = newIndex;
+                        }
+                        target.Triangles.Add(targetTriangle);
+                    }
+                    if (target.Triangles.Count > 0) separated.Add(target);
+                }
+            }
+
+            room.ObjModel.Groups.Clear();
+            room.ObjModel.Groups.AddRange(separated);
+            room.TrueGroups = room.ObjModel.Groups;
+            room.AuthoringPrimitivesApplied = true;
+            CurrentScene.PregeneratedMesh = false;
+            room.ObjModel.BasePath = CurrentScene.BasePath;
+            room.ObjModel.Prepare(true, room.TrueGroups);
+            GroupList.DataSource = null;
+            GroupList.DataSource = room.TrueGroups;
+            authoringSelection = null;
+            authoringTreeDirty = true;
+            savechanges = true;
+            UpdateForm();
+            glControl1.Invalidate();
+        }
+
         private void OpenAuthoringAssetBrowser()
         {
             if (CurrentScene == null || RoomList.SelectedIndex < 0) return;
@@ -1098,10 +1179,27 @@ namespace SharpOcarina
 
             int room = authoringSelection.RoomIndex;
             if (room >= 0 && room < CurrentScene.Rooms.Count &&
-                (authoringSelection.Kind == "Room" || authoringSelection.Kind == "Object" || authoringSelection.Kind == "Group"))
+                (authoringSelection.Kind == "Room" || authoringSelection.Kind == "Object"))
             {
                 if (CurrentScene.Rooms[room].ObjModel == null || CurrentScene.Rooms[room].ObjModel.Vertices.Count == 0) return false;
                 position = GetCenterPoint(CurrentScene.Rooms[room].ObjModel.Vertices);
+                return true;
+            }
+
+            if (authoringSelection.Kind == "Group" && room >= 0 && room < CurrentScene.Rooms.Count &&
+                authoringSelection.Value is ObjFile.Group)
+            {
+                ObjFile.Group group = (ObjFile.Group)authoringSelection.Value;
+                ObjFile model = CurrentScene.Rooms[room].ObjModel;
+                if (model == null || group.Triangles == null || group.Triangles.Count == 0) return false;
+                List<ObjFile.Vertex> vertices = new List<ObjFile.Vertex>();
+                HashSet<int> indices = new HashSet<int>();
+                foreach (ObjFile.Triangle triangle in group.Triangles)
+                    foreach (int index in triangle.VertIndex)
+                        if (indices.Add(index) && index >= 0 && index < model.Vertices.Count)
+                            vertices.Add(model.Vertices[index]);
+                if (vertices.Count == 0) return false;
+                position = GetCenterPoint(vertices);
                 return true;
             }
 
@@ -1156,7 +1254,7 @@ namespace SharpOcarina
         private bool CanEditAuthoringPosition()
         {
             if (CurrentScene == null || authoringSelection == null) return false;
-            if (authoringSelection.Kind == "Actor" || authoringSelection.Kind == "PathPoint")
+            if (authoringSelection.Kind == "Actor" || authoringSelection.Kind == "PathPoint" || authoringSelection.Kind == "Group")
                 return TryGetAuthoringSelectionPosition(out _);
             return authoringSelection.Kind == "Transition" &&
                 authoringSelection.ItemIndex >= 0 && authoringSelection.ItemIndex < CurrentScene.Transitions.Count;
@@ -1238,6 +1336,25 @@ namespace SharpOcarina
                 transition.XRot = (short)authoringRotationX.Value;
                 transition.YRot = (short)authoringRotationY.Value;
                 transition.ZRot = (short)authoringRotationZ.Value;
+            }
+            else if (authoringSelection.Kind == "Group")
+            {
+                ObjFile.Group group = authoringSelection.Value as ObjFile.Group;
+                ObjFile model = authoringSelection.RoomIndex >= 0 && authoringSelection.RoomIndex < CurrentScene.Rooms.Count
+                    ? CurrentScene.Rooms[authoringSelection.RoomIndex].ObjModel : null;
+                Vector3d oldPosition;
+                if (group == null || model == null || !TryGetAuthoringSelectionPosition(out oldPosition)) return;
+                Vector3d delta = new Vector3d(x - oldPosition.X, y - oldPosition.Y, z - oldPosition.Z);
+                HashSet<int> indices = new HashSet<int>();
+                foreach (ObjFile.Triangle triangle in group.Triangles)
+                    foreach (int index in triangle.VertIndex)
+                        if (indices.Add(index) && index >= 0 && index < model.Vertices.Count)
+                        {
+                            model.Vertices[index].X += delta.X;
+                            model.Vertices[index].Y += delta.Y;
+                            model.Vertices[index].Z += delta.Z;
+                        }
+                model.Prepare(false, CurrentScene.Rooms[authoringSelection.RoomIndex].TrueGroups);
             }
             else
             {

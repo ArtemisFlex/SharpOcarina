@@ -293,8 +293,29 @@ namespace SharpOcarina.SayakaGL
         public static string GetTextureCaptureKey(int activeTexture)
         {
             NTextureStruct texture = NGraphics.Textures[activeTexture];
-            return texture.Address.ToString("X8") + "_" + texture.Format.ToString("X2") + "_" +
+            string key = texture.Address.ToString("X8") + "_" + texture.Format.ToString("X2") + "_" +
                 texture.RealWidth.ToString() + "x" + texture.RealHeight.ToString();
+
+            // CI textures share texel addresses while changing palettes. Include a
+            // compact palette fingerprint so one palette cannot overwrite another
+            // captured material during room export.
+            if (texture.Format == 0x40 || texture.Format == 0x48 || texture.Format == 0x50)
+            {
+                unchecked
+                {
+                    uint paletteHash = 2166136261;
+                    for (int i = 0; i < NGraphics.Palette.Length; i++)
+                    {
+                        Color4 color = NGraphics.Palette[i];
+                        paletteHash = (paletteHash ^ (uint)(color.R * 255.0f)) * 16777619;
+                        paletteHash = (paletteHash ^ (uint)(color.G * 255.0f)) * 16777619;
+                        paletteHash = (paletteHash ^ (uint)(color.B * 255.0f)) * 16777619;
+                        paletteHash = (paletteHash ^ (uint)(color.A * 255.0f)) * 16777619;
+                    }
+                    key += "_P" + paletteHash.ToString("X8");
+                }
+            }
+            return key;
         }
 
         public static void BeginGeometryCapture()
