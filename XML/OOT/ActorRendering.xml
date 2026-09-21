@@ -347,5 +347,49 @@
   <Actor Key="0008" Var="...D" Offset="0004D4E0" Scale="0.0075" Colors="255,170,255,125,100,0,255,125">gameplay_keep</Actor> <!--flame -->
   <Actor Key="0008" Var="...E" Offset="0004D4E0" Scale="0.0075" Colors="170,255,255,125,0,0,255,125">gameplay_keep</Actor> <!--flame -->
   <Actor Key="0008" Var="...F" Offset="0004D4E0" Scale="0.0075" Colors="170,255,255,125,0,150,255,125">gameplay_keep</Actor> <!--flame -->
+  <!-- Human and humanoid NPC previews. These use the existing animated-object
+       discovery path; no parallel actor renderer is needed. -->
+  <Actor Key="003D" Var="...." Scale="0.01" Animated="1">object_ossan</Actor> <!-- Shopkeeper -->
+  <Actor Key="0048" Var="...." Scale="0.01" Animated="1">object_xc</Actor> <!-- Sheik -->
+  <Actor Key="0084" Var="...." Scale="0.01" Animated="1">object_ta</Actor> <!-- Talon -->
+  <Actor Key="0085" Var="...." Scale="0.01" Animated="1">object_tk</Actor> <!-- Dampe -->
+  <Actor Key="0091" Var="...." Scale="0.01" Animated="1">object_po_sisters</Actor> <!-- Poe Sisters -->
+  <Actor Key="0098" Var="...." Scale="0.01" Animated="1">object_du</Actor> <!-- Darunia -->
+  <Actor Key="00A1" Var="...." Scale="0.01" Animated="1">object_ru1</Actor> <!-- Young Ruto -->
+  <Actor Key="00A6" Var="...." Scale="0.01" Animated="1">object_rl</Actor> <!-- Rauru -->
+  <Actor Key="00A9" Var="...." Scale="0.01" Animated="1">object_im</Actor> <!-- Impa -->
+  <Actor Key="00B3" Var="...." Scale="0.01" Animated="1">object_sd</Actor> <!-- Gate guards -->
+  <Actor Key="00C3" Var="...." Scale="0.01" Animated="1">object_nb</Actor> <!-- Nabooru -->
+  <Actor Key="00CB" Var="...." Scale="0.01" Animated="1">object_in</Actor> <!-- Ingo -->
+  <Actor Key="00D2" Var="...." Scale="0.01" Animated="1">object_ru2</Actor> <!-- Adult Ruto -->
+  <Actor Key="00D9" Var="...." Scale="0.01" Animated="1">object_ma2</Actor> <!-- Adult Malon -->
+  <Actor Key="00E7" Var="...." Scale="0.01" Animated="1">object_ma1</Actor> <!-- Child Malon -->
+  <Actor Key="0122" Var="...." Scale="0.01" Animated="1">object_tk</Actor> <!-- Dampe ghost -->
+  <Actor Key="0132" Var="...." Scale="0.01" Animated="1">object_toryo</Actor> <!-- Head carpenter -->
+  <Actor Key="0133" Var="...." Scale="0.01" Animated="1">object_daiku</Actor> <!-- Carpenter -->
+  <Actor Key="0138" Var="...." Scale="0.01" Animated="1">object_ge1</Actor> <!-- White-clothed Gerudo -->
+  <Actor Key="013D" Var="...." Scale="0.01" Animated="1">object_gm</Actor> <!-- Medigoron -->
+  <Actor Key="013E" Var="...." Scale="0.01" Animated="1">object_ms</Actor> <!-- Bean seller -->
+  <Actor Key="013F" Var="...." Scale="0.01" Animated="1">object_hs</Actor> <!-- Carpenter's son -->
+  <Actor Key="0142" Var="...." Scale="0.01" Animated="1">object_sd</Actor> <!-- Hyrule Castle guard -->
+  <Actor Key="0146" Var="...." Scale="0.01" Animated="1">object_sa</Actor> <!-- Saria -->
+  <Actor Key="0149" Var="...." Scale="0.01" Animated="1">object_ds</Actor> <!-- Potion shop lady -->
+  <Actor Key="014D" Var="...." Scale="0.01" Animated="1">object_owl</Actor> <!-- Kaepora Gaebora -->
+  <Actor Key="0162" Var="...." Scale="0.01" Animated="1">object_mm</Actor> <!-- Running Man -->
+  <Actor Key="0163" Var="...." Scale="0.01" Animated="1">object_os_anime</Actor> <!-- Kokiri -->
+  <Actor Key="0164" Var="...." Scale="0.01" Animated="1">object_kz</Actor> <!-- King Zora -->
+  <Actor Key="0167" Var="...." Scale="0.01" Animated="1">object_ani</Actor> <!-- Kakariko rooftop man -->
+  <Actor Key="016E" Var="...." Scale="0.01" Animated="1">object_os_anime</Actor> <!-- Hylian -->
+  <Actor Key="0178" Var="...." Scale="0.01" Animated="1">object_sd</Actor> <!-- Hyrule guard -->
+  <Actor Key="0188" Var="...." Scale="0.01" Animated="1">object_ssh</Actor> <!-- Cursed Skulltula person -->
+  <Actor Key="0197" Var="...." Scale="0.01" Animated="1">object_geldb</Actor> <!-- Gerudo fighter -->
+  <Actor Key="01A6" Var="...." Scale="0.01" Animated="1">object_hs</Actor> <!-- Child carpenter's son -->
+  <Actor Key="01AE" Var="...." Scale="0.01" Animated="1">object_oF1d_map</Actor> <!-- Gorons -->
+  <Actor Key="01BC" Var="...." Scale="0.01" Animated="1">object_daiku</Actor> <!-- Kakariko carpenters -->
+  <Actor Key="01BF" Var="...." Scale="0.01" Animated="1">object_po_field</Actor> <!-- Guiding Poe -->
+  <Actor Key="01C5" Var="...." Scale="0.01" Animated="1">object_ma2</Actor> <!-- Adult Malon -->
+  <Actor Key="01CE" Var="...." Scale="0.01" Animated="1">object_zo</Actor> <!-- Zora -->
+  <Actor Key="01D0" Var="...." Scale="0.01" Animated="1">object_geldb</Actor> <!-- Gerudo membership NPC -->
+  <Actor Key="01D4" Var="...." Scale="0.01" Animated="1">object_mm</Actor> <!-- Adult Running Man -->
   <!-- actor 018D  840 floor 1190 gate-->
 </Table>
