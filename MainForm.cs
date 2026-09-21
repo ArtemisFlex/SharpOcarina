@@ -1237,7 +1237,45 @@ namespace SharpOcarina
                         UpdateAuthoringActorActions();
                     }
                 }
+
+                // A newly loaded scene should have a useful details context immediately.
+                // Keep an existing selection when it can be restored; otherwise select
+                // the currently displayed room so the PropertyGrid is never blank by default.
+                if (authoringSelection == null)
+                {
+                    TreeNode defaultNode = FindAuthoringRoomNode(authoringContentTree.Nodes, RoomList == null ? -1 : RoomList.SelectedIndex);
+                    if (defaultNode == null)
+                        defaultNode = FindFirstAuthoringSelection(authoringContentTree.Nodes);
+                    if (defaultNode != null)
+                        authoringContentTree.SelectedNode = defaultNode;
+                }
             }
+        }
+
+        private static TreeNode FindAuthoringRoomNode(TreeNodeCollection nodes, int roomIndex)
+        {
+            foreach (TreeNode node in nodes)
+            {
+                AuthoringSelection selection = node.Tag as AuthoringSelection;
+                if (selection != null && selection.Kind == "Room" && selection.RoomIndex == roomIndex)
+                    return node;
+
+                TreeNode child = FindAuthoringRoomNode(node.Nodes, roomIndex);
+                if (child != null) return child;
+            }
+            return null;
+        }
+
+        private static TreeNode FindFirstAuthoringSelection(TreeNodeCollection nodes)
+        {
+            foreach (TreeNode node in nodes)
+            {
+                if (node.Tag is AuthoringSelection)
+                    return node;
+                TreeNode child = FindFirstAuthoringSelection(node.Nodes);
+                if (child != null) return child;
+            }
+            return null;
         }
 
         private static TreeNode FindAuthoringNode(TreeNodeCollection nodes, AuthoringSelection selection)
