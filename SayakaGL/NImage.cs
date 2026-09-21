@@ -267,11 +267,16 @@ namespace NImage
                     case 0x18:
                         RGBA32(Source, SourceOffset, ref Target);
                         break;
+                    // OoT uses 0x40 for CI4 and 0x48 for CI8. The legacy
+                    // helper names are historical: CI8 decodes packed nibbles
+                    // (CI4), while CI4 decodes one palette byte per texel (CI8).
                     case 0x40:
-                    case 0x50:
                         CI8(Width, Height, LineSize, Source, SourceOffset, ref Target, Palette);
                         break;
                     case 0x48:
+                        CI4(Width, Height, LineSize, Source, SourceOffset, ref Target, Palette);
+                        break;
+                    case 0x50:
                         CI4(Width, Height, LineSize, Source, SourceOffset, ref Target, Palette);
                         break;
                     case 0x60:

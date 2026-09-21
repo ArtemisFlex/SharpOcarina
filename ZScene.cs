@@ -2067,7 +2067,10 @@ namespace SharpOcarina
 
                 foreach (SayakaGL.UcodeSimulator.CapturedTriangle triangle in triangles)
                     foreach (Vector2d texCoord in triangle.TexCoords)
-                        writer.WriteLine(string.Format(CultureInfo.InvariantCulture, "vt {0} {1}", texCoord.X, texCoord.Y));
+                        // ObjFile converts OBJ V coordinates into its internal
+                        // OpenGL convention, so compensate once here instead
+                        // of applying the vertical flip twice on reload.
+                        writer.WriteLine(string.Format(CultureInfo.InvariantCulture, "vt {0} {1}", texCoord.X, 1.0 - texCoord.Y));
 
                 foreach (SayakaGL.UcodeSimulator.CapturedTriangle triangle in triangles)
                     foreach (Vector3d normal in triangle.Normals)
